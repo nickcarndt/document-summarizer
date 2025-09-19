@@ -32,8 +32,8 @@ A lightweight AI app for summarizing and querying PDFs using OpenAI models.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/nickcarndt/Document-AI-Demo.git
-   cd Document-AI-Demo
+   git clone https://github.com/nickcarndt/Document-Summarizer.git
+   cd Document-Summarizer
    ```
 
 2. **Create virtual environment**
