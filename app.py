@@ -2,6 +2,7 @@ import os
 import io
 from dataclasses import dataclass
 from typing import List, Tuple
+from io import BytesIO
 
 from dotenv import load_dotenv
 
