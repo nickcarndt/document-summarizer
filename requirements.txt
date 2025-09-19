@@ -1,0 +1,5 @@
+streamlit==1.38.0
+pypdf==4.3.1
+openai==1.51.0
+numpy==2.1.2
+python-dotenv==1.0.1
