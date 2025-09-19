@@ -38,7 +38,7 @@ A lightweight AI app for summarizing and querying PDFs using OpenAI models.
 
 2. **Create virtual environment**
    ```bash
-   python -m venv .venv
+   python3 -m venv .venv  # On macOS/Linux use python3
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
