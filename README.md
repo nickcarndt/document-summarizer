@@ -51,12 +51,12 @@ A lightweight AI app for summarizing and querying PDFs using OpenAI models.
    
    Create a `.env` file in the project root:
    ```bash
-   echo "OPENAI_API_KEY=your_key_here" > .env
+   echo "OPENAI_API_KEY=sk-your-actual-key-here" > .env
    ```
    
    Or export directly:
    ```bash
-   export OPENAI_API_KEY=your_key_here
+   export OPENAI_API_KEY=sk-your-actual-key-here
    ```
 
 5. **Run the application**
