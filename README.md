@@ -59,8 +59,9 @@ A lightweight AI app for summarizing and querying PDFs using OpenAI models.
    export OPENAI_API_KEY=sk-your-actual-key-here
    ```
 
-5. **Run the application**
+5. **Activate virtual environment and run the application**
    ```bash
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    streamlit run app.py
    ```
 
