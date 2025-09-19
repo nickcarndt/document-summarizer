@@ -1,6 +1,6 @@
 # Document Summarizer
 
-A lightweight AI tool for summarizing and querying documents using LLMs. Upload PDFs, get intelligent summaries, and ask natural-language questions about your documents.
+A lightweight AI app for summarizing and querying PDFs using OpenAI models.
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.38+-red.svg)](https://streamlit.io)
@@ -15,11 +15,11 @@ A lightweight AI tool for summarizing and querying documents using LLMs. Upload 
 - ⚙️ **Customizable**: Adjustable token limits and model selection
 - 🎨 **Modern UI**: Clean, responsive Streamlit interface
 
-## 📸 Demo Screenshots  
+## 📸 Screenshots  
 
 ![Upload + Summarize](./screenshots/screenshot1.png)  
 ![Key Points](./screenshots/screenshot2.png)  
-![Q&A Demo](./screenshots/screenshot3.png)
+![Document Q&A](./screenshots/screenshot3.png)
 
 ## Quick Start
 
