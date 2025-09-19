@@ -15,9 +15,11 @@ A lightweight AI tool for summarizing and querying documents using LLMs. Upload 
 - ⚙️ **Customizable**: Adjustable token limits and model selection
 - 🎨 **Modern UI**: Clean, responsive Streamlit interface
 
-## Demo
+## 📸 Demo Screenshots  
 
-*Screenshots coming soon - see `/screenshots/` folder*
+![Upload + Summarize](./screenshots/screenshot1.png)  
+![Key Points](./screenshots/screenshot2.png)  
+![Q&A Demo](./screenshots/screenshot3.png)
 
 ## Quick Start
 
