@@ -11,7 +11,7 @@ load_dotenv()
 import streamlit as st
 import numpy as np
 from openai import OpenAI
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
