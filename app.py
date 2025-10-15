@@ -15,7 +15,7 @@ from openai import OpenAI
 from pypdf import PdfReader
 
 # Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI()  # auto-detects OPENAI_API_KEY from environment
 
 st.set_page_config(page_title="Document AI Demo", page_icon="📄", layout="wide")
 
