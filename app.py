@@ -183,6 +183,10 @@ if file_size_mb > 50:  # 50MB limit - reasonable for most documents
     st.stop()
 elif file_size_mb > 30:
     st.warning(f"⚠️ Large file ({file_size_mb:.1f} MB) - processing may take longer")
+    if st.button("Process Anyway (May hit Cloud Run limits)"):
+        st.info("Attempting to process large file...")
+    else:
+        st.stop()
 
 # Extract text
 try:
