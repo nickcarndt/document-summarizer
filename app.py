@@ -15,7 +15,16 @@ from openai import OpenAI
 from pypdf import PdfReader
 
 # Initialize OpenAI client
-client = OpenAI()  # auto-detects OPENAI_API_KEY from environment
+api_key = os.getenv("OPENAI_API_KEY")
+if api_key:
+    # Debug: log key length and first/last chars (for troubleshooting)
+    st.sidebar.write(f"🔑 API Key length: {len(api_key)} chars")
+    st.sidebar.write(f"🔑 Starts with: {api_key[:10]}...")
+    st.sidebar.write(f"🔑 Ends with: ...{api_key[-10:]}")
+    client = OpenAI(api_key=api_key)
+else:
+    st.sidebar.write("⚠️ No API key found")
+    client = OpenAI()  # auto-detects OPENAI_API_KEY from environment
 
 st.set_page_config(
     page_title="Document Summarizer", 
