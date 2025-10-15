@@ -182,8 +182,9 @@ if file_size_mb > 50:  # 50MB limit - reasonable for most documents
     st.error(f"File too large ({file_size_mb:.1f} MB). Please upload a PDF under 50MB for optimal performance.")
     st.stop()
 elif file_size_mb > 30:
-    st.warning(f"⚠️ Large file ({file_size_mb:.1f} MB) - processing may take longer")
-    if st.button("Process Anyway (May hit Cloud Run limits)"):
+    st.warning(f"⚠️ Large file ({file_size_mb:.1f} MB) - Cloud Run has a 32MB request limit")
+    st.info("💡 This file may fail with 413 error. Consider using a smaller file or implementing chunked processing.")
+    if st.button("Try Anyway (Likely to fail)"):
         st.info("Attempting to process large file...")
     else:
         st.stop()
