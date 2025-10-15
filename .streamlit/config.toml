@@ -1,6 +1,13 @@
 [server]
-maxUploadSize = 50
-maxMessageSize = 50
+maxUploadSize = 100
+maxMessageSize = 100
+fileUploaderMaxSize = 100
 
 [browser]
 gatherUsageStats = false
+
+[theme]
+primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"

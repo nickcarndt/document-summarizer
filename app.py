@@ -178,13 +178,21 @@ if uploaded_file is None:
 file_size_mb = len(uploaded_file.getvalue()) / (1024 * 1024)
 st.info(f"📄 File size: {file_size_mb:.1f} MB")
 
+# Debug: Check if this is actually hitting the limit
+if file_size_mb > 32:
+    st.error(f"❌ File size ({file_size_mb:.1f} MB) exceeds Cloud Run's 32MB request limit")
+    st.info("This will definitely fail with 413 error")
+elif file_size_mb > 30:
+    st.warning(f"⚠️ Large file ({file_size_mb:.1f} MB) - close to Cloud Run's 32MB limit")
+    st.info("This might work, but could fail with 413 error")
+else:
+    st.success(f"✅ File size ({file_size_mb:.1f} MB) should work fine")
+
 if file_size_mb > 50:  # 50MB limit - reasonable for most documents
     st.error(f"File too large ({file_size_mb:.1f} MB). Please upload a PDF under 50MB for optimal performance.")
     st.stop()
 elif file_size_mb > 30:
-    st.warning(f"⚠️ Large file ({file_size_mb:.1f} MB) - Cloud Run has a 32MB request limit")
-    st.info("💡 This file may fail with 413 error. Consider using a smaller file or implementing chunked processing.")
-    if st.button("Try Anyway (Likely to fail)"):
+    if st.button("Try Anyway"):
         st.info("Attempting to process large file...")
     else:
         st.stop()
