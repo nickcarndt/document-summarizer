@@ -165,6 +165,12 @@ if uploaded_file is None:
     st.info("Upload a PDF to begin.")
     st.stop()
 
+# Check file size before processing
+file_size_mb = len(uploaded_file.getvalue()) / (1024 * 1024)
+if file_size_mb > 10:  # 10MB limit for Cloud Run
+    st.error(f"File too large ({file_size_mb:.1f} MB). Please upload a PDF under 10MB for optimal performance.")
+    st.stop()
+
 # Extract text
 try:
     with st.status("Extracting text…", expanded=False):
