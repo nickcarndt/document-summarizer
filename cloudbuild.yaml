@@ -1,0 +1,36 @@
+substitutions:
+  _REGION: "us-central1"
+  _SERVICE: "docsum"
+  _REPO: "docsum-images"
+
+steps:
+  # 1) Build image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - build
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA"
+      - "."
+
+  # 2) Push image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - push
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA"
+
+  # 3) Deploy to Cloud Run (same SA, secrets, bucket)
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      [
+        "run","deploy","${_SERVICE}",
+        "--image","${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA",
+        "--region","${_REGION}",
+        "--allow-unauthenticated",
+        "--service-account","docsum-runner@${PROJECT_ID}.iam.gserviceaccount.com",
+        "--set-env-vars","GCS_BUCKET=${PROJECT_ID}-docsum-uploads",
+        "--set-secrets","OPENAI_API_KEY=OPENAI_API_KEY:latest"
+      ]
+
+images:
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA"
