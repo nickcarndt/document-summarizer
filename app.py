@@ -17,7 +17,12 @@ from pypdf import PdfReader
 # Initialize OpenAI client
 client = OpenAI()  # auto-detects OPENAI_API_KEY from environment
 
-st.set_page_config(page_title="Document AI Demo", page_icon="📄", layout="wide")
+st.set_page_config(
+    page_title="Document Summarizer", 
+    page_icon="📄", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 st.title("📄 Document Summarizer")
 st.caption("Upload a PDF to get a concise summary, key bullets, and ask questions.")
@@ -154,19 +159,31 @@ with st.sidebar:
     )
     max_summary_tokens = st.slider("Max summary tokens", 256, 2048, 512, 64)
 
-uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])  # type: ignore
+uploaded_file = st.file_uploader("Upload PDF", type=["pdf"], max_size=50)  # 50MB limit
 
 if uploaded_file is None:
     st.info("Upload a PDF to begin.")
     st.stop()
 
 # Extract text
-with st.status("Extracting text…", expanded=False):
-    pdf_bytes = uploaded_file.read()
-    text = extract_text_from_pdf(io.BytesIO(pdf_bytes))
-
-if not text.strip():
-    st.error("No extractable text found in the PDF.")
+try:
+    with st.status("Extracting text…", expanded=False):
+        pdf_bytes = uploaded_file.read()
+        file_size_mb = len(pdf_bytes) / (1024 * 1024)
+        st.write(f"File size: {file_size_mb:.1f} MB")
+        
+        if file_size_mb > 50:
+            st.error("File too large. Please upload a PDF under 50MB.")
+            st.stop()
+            
+        text = extract_text_from_pdf(io.BytesIO(pdf_bytes))
+        
+    if not text.strip():
+        st.error("No extractable text found in the PDF.")
+        st.stop()
+        
+except Exception as e:
+    st.error(f"Error processing PDF: {str(e)}")
     st.stop()
 
 # Summarize
