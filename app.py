@@ -15,7 +15,14 @@ from openai import OpenAI
 from pypdf import PdfReader
 
 # Initialize OpenAI client
-client = OpenAI()  # auto-detects OPENAI_API_KEY from environment
+api_key = os.getenv("OPENAI_API_KEY")
+if api_key:
+    # Debug: show first/last few chars of key (for troubleshooting)
+    st.sidebar.write(f"API Key: {api_key[:8]}...{api_key[-8:]}")
+    client = OpenAI(api_key=api_key)
+else:
+    st.sidebar.write("⚠️ No API key found")
+    client = OpenAI()  # auto-detects OPENAI_API_KEY from environment
 
 st.set_page_config(
     page_title="Document Summarizer", 
@@ -144,7 +151,11 @@ def answer_question(question: str, retriever: RetrieverState, model: str = "gpt-
 with st.sidebar:
     st.header("Settings")
     openai_key_present = bool(os.getenv("OPENAI_API_KEY"))
-    st.write("OpenAI API key:", "✅ found" if openai_key_present else "❌ missing")
+    if openai_key_present:
+        key_preview = os.getenv("OPENAI_API_KEY", "")[:8] + "..." + os.getenv("OPENAI_API_KEY", "")[-8:]
+        st.write("OpenAI API key:", f"✅ found ({key_preview})")
+    else:
+        st.write("OpenAI API key:", "❌ missing")
     default_model = st.selectbox(
         "Model",
         options=["gpt-4o-mini", "gpt-4o", "o4-mini"],
