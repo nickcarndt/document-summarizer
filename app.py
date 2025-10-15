@@ -15,16 +15,7 @@ from openai import OpenAI
 from pypdf import PdfReader
 
 # Initialize OpenAI client
-api_key = os.getenv("OPENAI_API_KEY")
-if api_key:
-    # Debug: log key length and first/last chars (for troubleshooting)
-    st.sidebar.write(f"🔑 API Key length: {len(api_key)} chars")
-    st.sidebar.write(f"🔑 Starts with: {api_key[:10]}...")
-    st.sidebar.write(f"🔑 Ends with: ...{api_key[-10:]}")
-    client = OpenAI(api_key=api_key)
-else:
-    st.sidebar.write("⚠️ No API key found")
-    client = OpenAI()  # auto-detects OPENAI_API_KEY from environment
+client = OpenAI()  # auto-detects OPENAI_API_KEY from environment
 
 st.set_page_config(
     page_title="Document Summarizer", 
@@ -35,6 +26,41 @@ st.set_page_config(
 
 st.title("📄 Document Summarizer")
 st.caption("Upload a PDF to get a concise summary, key bullets, and ask questions.")
+
+# Cloud Storage Functions
+def upload_to_gcs(file_bytes, filename):
+    """Upload file to Google Cloud Storage and return the GCS path"""
+    try:
+        client = storage.Client()
+        bucket_name = "named-griffin-448720-k0-docsum-uploads"
+        bucket = client.bucket(bucket_name)
+        
+        # Generate unique filename
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+        blob = bucket.blob(unique_filename)
+        
+        # Upload file
+        blob.upload_from_string(file_bytes, content_type='application/pdf')
+        
+        return f"gs://{bucket_name}/{unique_filename}"
+    except Exception as e:
+        st.error(f"Failed to upload to Cloud Storage: {str(e)}")
+        return None
+
+def download_from_gcs(gcs_path):
+    """Download file from Google Cloud Storage"""
+    try:
+        client = storage.Client()
+        # Parse gs://bucket/path format
+        path_parts = gcs_path.replace("gs://", "").split("/", 1)
+        bucket_name = path_parts[0]
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(path_parts[1])
+        
+        return blob.download_as_bytes()
+    except Exception as e:
+        st.error(f"Failed to download from Cloud Storage: {str(e)}")
+        return None
 
 # PDF Processing Functions
 def extract_text_from_pdf(pdf_bytes: BytesIO) -> str:
@@ -174,28 +200,19 @@ if uploaded_file is None:
     st.info("Upload a PDF to begin.")
     st.stop()
 
-# Check file size before processing
+# Check file size - simple approach
 file_size_mb = len(uploaded_file.getvalue()) / (1024 * 1024)
 st.info(f"📄 File size: {file_size_mb:.1f} MB")
 
-# Debug: Check if this is actually hitting the limit
 if file_size_mb > 32:
-    st.error(f"❌ File size ({file_size_mb:.1f} MB) exceeds Cloud Run's 32MB request limit")
-    st.info("This will definitely fail with 413 error")
-elif file_size_mb > 30:
+    st.error(f"❌ File too large ({file_size_mb:.1f} MB). Cloud Run has a 32MB request limit.")
+    st.info("💡 Please use a PDF under 32MB. Your document is not saved anywhere.")
+    st.stop()
+elif file_size_mb > 25:
     st.warning(f"⚠️ Large file ({file_size_mb:.1f} MB) - close to Cloud Run's 32MB limit")
-    st.info("This might work, but could fail with 413 error")
+    st.info("This should work, but may be slow to process")
 else:
     st.success(f"✅ File size ({file_size_mb:.1f} MB) should work fine")
-
-if file_size_mb > 50:  # 50MB limit - reasonable for most documents
-    st.error(f"File too large ({file_size_mb:.1f} MB). Please upload a PDF under 50MB for optimal performance.")
-    st.stop()
-elif file_size_mb > 30:
-    if st.button("Try Anyway"):
-        st.info("Attempting to process large file...")
-    else:
-        st.stop()
 
 # Extract text
 try:
