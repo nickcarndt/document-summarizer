@@ -25,42 +25,7 @@ st.set_page_config(
 )
 
 st.title("📄 Document Summarizer")
-st.caption("Upload a PDF to get a concise summary, key bullets, and ask questions.")
-
-# Cloud Storage Functions
-def upload_to_gcs(file_bytes, filename):
-    """Upload file to Google Cloud Storage and return the GCS path"""
-    try:
-        client = storage.Client()
-        bucket_name = "named-griffin-448720-k0-docsum-uploads"
-        bucket = client.bucket(bucket_name)
-        
-        # Generate unique filename
-        unique_filename = f"{uuid.uuid4()}_{filename}"
-        blob = bucket.blob(unique_filename)
-        
-        # Upload file
-        blob.upload_from_string(file_bytes, content_type='application/pdf')
-        
-        return f"gs://{bucket_name}/{unique_filename}"
-    except Exception as e:
-        st.error(f"Failed to upload to Cloud Storage: {str(e)}")
-        return None
-
-def download_from_gcs(gcs_path):
-    """Download file from Google Cloud Storage"""
-    try:
-        client = storage.Client()
-        # Parse gs://bucket/path format
-        path_parts = gcs_path.replace("gs://", "").split("/", 1)
-        bucket_name = path_parts[0]
-        bucket = client.bucket(bucket_name)
-        blob = bucket.blob(path_parts[1])
-        
-        return blob.download_as_bytes()
-    except Exception as e:
-        st.error(f"Failed to download from Cloud Storage: {str(e)}")
-        return None
+st.caption("Upload a PDF (under 32MB) to get a concise summary, key bullets, and ask questions.")
 
 # PDF Processing Functions
 def extract_text_from_pdf(pdf_bytes: BytesIO) -> str:
