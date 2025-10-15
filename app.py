@@ -170,7 +170,7 @@ with st.sidebar:
     )
     max_summary_tokens = st.slider("Max summary tokens", 256, 2048, 512, 64)
 
-uploaded_file = st.file_uploader("Upload PDF", type=["pdf"], max_size=50)  # 50MB limit
+uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])  # type: ignore
 
 if uploaded_file is None:
     st.info("Upload a PDF to begin.")
