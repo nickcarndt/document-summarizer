@@ -5,3 +5,4 @@ tiktoken
 numpy
 python-dotenv
 httpx
+google-cloud-storage
