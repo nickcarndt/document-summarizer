@@ -322,10 +322,10 @@ def summarize_text(text: str) -> Tuple[str, List[str]]:
             # Clean up bullet points and remove redundant headers
             clean_line = line.lstrip('-* ').strip()
             # Skip lines that are just headers like "Key Bullet Points:" or "Key Points:"
-            # Skip lines that are just headers or redundant bullet point labels using aggressive regex
+            # Skip lines that are just headers or redundant bullet point labels using simple string matching
             clean_lower = clean_line.lower().strip()
-            # Use regex to catch all variations including asterisks and punctuation
-            if not re.search(r'^(key\s+)?(bullet\s+)?points:?\*?$|^key\s+insights:?\*?$|^insights:?\*?$|^summary:?\*?$', clean_lower, re.IGNORECASE):
+            # Simple string matching - more reliable than regex
+            if clean_lower not in ('key bullet points:**', 'key bullet points:', 'key points:', 'bullet points:', 'key insights:', 'insights:', 'summary:', 'key bullet points', 'key points', 'bullet points', 'key insights', 'insights', 'summary'):
                 bullets.append(clean_line)
         elif in_bullets:
             bullets.append(line)
