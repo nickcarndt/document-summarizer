@@ -462,7 +462,7 @@ with st.status("Generating AI summary...", expanded=False):
 # Display results in professional sections
 st.markdown('<div class="content-section">', unsafe_allow_html=True)
 st.markdown('<div class="section-title">Document Summary</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="summary-content">{summary}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="summary-content">\n\n{summary}\n\n</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="content-section">', unsafe_allow_html=True)
