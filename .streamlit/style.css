@@ -35,8 +35,8 @@
 .main-header {
     background: linear-gradient(135deg, var(--surface-color) 0%, #f1f5f9 100%);
     border-bottom: 1px solid var(--border-color);
-    padding: 4rem 0 3rem 0;
-    margin-bottom: 3rem;
+    padding: 5rem 0 4rem 0;
+    margin-bottom: 4rem;
     box-shadow: var(--shadow-sm);
 }
 
@@ -158,8 +158,8 @@
     background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    padding: 1.25rem;
-    margin: 1rem 0;
+    padding: 0.9rem;
+    margin: 0.7rem 0;
     box-shadow: var(--shadow-sm);
     transition: all 0.2s ease;
 }
@@ -234,9 +234,9 @@
 
 /* File uploader button styling */
 .stFileUploader > div > div > button {
-    background: var(--primary-color) !important;
-    color: white !important;
-    border: none !important;
+    background: #f0f0f0 !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
     border-radius: var(--radius-md) !important;
     padding: 0.75rem 1.5rem !important;
     font-weight: 500 !important;
@@ -246,7 +246,9 @@
 }
 
 .stFileUploader > div > div > button:hover {
-    background: var(--primary-hover) !important;
+    background: var(--primary-color) !important;
+    color: white !important;
+    border-color: var(--primary-color) !important;
     box-shadow: var(--shadow-md) !important;
     transform: translateY(-1px) !important;
 }

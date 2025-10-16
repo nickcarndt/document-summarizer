@@ -100,7 +100,7 @@ def summarize_text(text: str) -> Tuple[str, List[str]]:
             # Clean up bullet points and remove redundant headers
             clean_line = line.lstrip('-* ').strip()
             # Skip lines that are just headers like "Key Bullet Points:" or "Key Points:"
-            if not clean_line.lower().endswith((':', 'points:', 'bullet points:')):
+            if not clean_line.lower().endswith((':', 'points:', 'bullet points:', 'insights:', 'summary:')):
                 bullets.append(clean_line)
         elif in_bullets:
             bullets.append(line)
@@ -205,7 +205,7 @@ elif file_size_mb > 25:
     """, unsafe_allow_html=True)
 else:
     st.markdown(f"""
-    <div class="file-info-card file-info-success">
+    <div class="file-info-card file-info-success" style="opacity: 0.8; margin-bottom: 1rem;">
         <strong>Document Loaded</strong><br>
         {uploaded_file.name} ({file_size_mb:.1f} MB)
     </div>
