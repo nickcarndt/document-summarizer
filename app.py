@@ -24,9 +24,40 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Load custom CSS
-with open('.streamlit/style.css') as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+# Load custom CSS with proper error handling
+try:
+    with open('.streamlit/style.css', 'r') as f:
+        css_content = f.read()
+        st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
+except FileNotFoundError:
+    # Fallback to inline CSS if file not found
+    st.markdown("""
+    <style>
+    .main-header { padding: 5rem 0 4rem 0; margin-bottom: 4rem; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); border-bottom: 1px solid #e2e8f0; }
+    .main-header h1 { font-size: 2.5rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .main-header .subtitle { font-size: 1.125rem; color: #64748b; margin-top: 0.5rem; }
+    .upload-container { background: #ffffff; border: 2px dashed #e2e8f0; border-radius: 0.75rem; padding: 3rem 2rem; text-align: center; margin: 2rem 0; }
+    .upload-icon { width: 80px; height: 80px; background: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto; color: white; font-size: 2rem; }
+    .upload-text { font-size: 1.25rem; font-weight: 500; color: #1e293b; margin-bottom: 0.5rem; }
+    .upload-subtext { font-size: 0.875rem; color: #64748b; }
+    .file-info-card { background: #ffffff; border-radius: 0.5rem; padding: 1.5rem; margin: 1rem 0; border-left: 4px solid #2563eb; }
+    .file-info-success { border-left-color: #059669; }
+    .file-info-warning { border-left-color: #d97706; }
+    .file-info-error { border-left-color: #dc2626; }
+    .content-section { background: #ffffff; border-radius: 0.75rem; padding: 2rem; margin: 1.5rem 0; border: 1px solid #e2e8f0; }
+    .section-title { font-size: 1.5rem; font-weight: 600; color: #1e293b; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0; }
+    .summary-content { font-size: 1.125rem; line-height: 1.7; color: #1e293b; background: #f8fafc; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #2563eb; }
+    .key-point { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.375rem; padding: 0.9rem; margin: 0.7rem 0; }
+    .qa-container { background: #ffffff; border-radius: 0.75rem; padding: 2rem; margin: 2rem 0; border: 1px solid #e2e8f0; }
+    .answer-content { background: #fafbfc; border-radius: 0.5rem; padding: 1.5rem; border-left: 4px solid #059669; font-size: 1rem; line-height: 1.6; color: #1e293b; margin-top: 1rem; border: 1px solid #e2e8f0; }
+    .stFileUploader > div > div > button { background: #f0f0f0 !important; color: #1e293b !important; border: 1px solid #e2e8f0 !important; border-radius: 0.5rem !important; }
+    .stFileUploader > div > div > button:hover { background: #2563eb !important; color: white !important; border-color: #2563eb !important; }
+    .stTextInput > div > div > input { background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 0.5rem !important; }
+    .stTextInput > div > div > input:focus { border-color: #2563eb !important; box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1) !important; }
+    </style>
+    """, unsafe_allow_html=True)
+except Exception as e:
+    st.error("Failed to load custom styling")
 
 # Professional header
 st.markdown("""
@@ -185,36 +216,40 @@ if uploaded_file is None:
     st.info("Please upload a PDF document to begin analysis.")
     st.stop()
 
-# File validation and status
-file_size_mb = len(uploaded_file.getvalue()) / (1024 * 1024)
+# File validation and status - optimized for performance
+if uploaded_file is not None:
+    # Get file size efficiently without loading entire file
+    file_size_bytes = len(uploaded_file.getvalue())
+    file_size_mb = file_size_bytes / (1024 * 1024)
+    
+    if file_size_mb > 32:
+        st.markdown(f"""
+        <div class="file-info-card file-info-error">
+            <strong>File Size Error</strong><br>
+            Document size ({file_size_mb:.1f} MB) exceeds the 32MB limit. Please use a smaller file.
+        </div>
+        """, unsafe_allow_html=True)
+        st.stop()
+    elif file_size_mb > 25:
+        st.markdown(f"""
+        <div class="file-info-card file-info-warning">
+            <strong>Large Document</strong><br>
+            Processing {file_size_mb:.1f} MB document. This may take additional time.
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="file-info-card file-info-success" style="opacity: 0.8; margin-bottom: 1rem;">
+            <strong>Document Loaded</strong><br>
+            {uploaded_file.name} ({file_size_mb:.1f} MB)
+        </div>
+        """, unsafe_allow_html=True)
 
-if file_size_mb > 32:
-    st.markdown(f"""
-    <div class="file-info-card file-info-error">
-        <strong>File Size Error</strong><br>
-        Document size ({file_size_mb:.1f} MB) exceeds the 32MB limit. Please use a smaller file.
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
-elif file_size_mb > 25:
-    st.markdown(f"""
-    <div class="file-info-card file-info-warning">
-        <strong>Large Document</strong><br>
-        Processing {file_size_mb:.1f} MB document. This may take additional time.
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown(f"""
-    <div class="file-info-card file-info-success" style="opacity: 0.8; margin-bottom: 1rem;">
-        <strong>Document Loaded</strong><br>
-        {uploaded_file.name} ({file_size_mb:.1f} MB)
-    </div>
-    """, unsafe_allow_html=True)
-
-# Extract text
+# Extract text - optimized to avoid double file reading
 try:
     with st.status("Extracting text from document...", expanded=False):
-        pdf_bytes = uploaded_file.read()
+        # Use the already loaded file content
+        pdf_bytes = uploaded_file.getvalue()
         text = extract_text_from_pdf(io.BytesIO(pdf_bytes))
         
     if not text.strip():
