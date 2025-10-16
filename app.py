@@ -21,11 +21,20 @@ st.set_page_config(
     page_title="Document Summarizer", 
     page_icon="📄", 
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-st.title("📄 Document Summarizer")
-st.caption("Upload a PDF (under 32MB) to get a concise summary, key bullets, and ask questions.")
+# Load custom CSS
+with open('.streamlit/style.css') as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+# Professional header
+st.markdown("""
+<div class="main-header">
+    <h1>Document Summarizer</h1>
+    <div class="subtitle">AI-powered document analysis and intelligent Q&A</div>
+</div>
+""", unsafe_allow_html=True)
 
 # PDF Processing Functions
 def extract_text_from_pdf(pdf_bytes: BytesIO) -> str:
@@ -57,7 +66,7 @@ def _chunk_text(text: str, max_chars: int = 1500, overlap: int = 200) -> List[st
         start = max(0, end - overlap)
     return chunks
 
-def summarize_text(text: str, model: str = "gpt-4o-mini", max_tokens: int = 512) -> Tuple[str, List[str]]:
+def summarize_text(text: str) -> Tuple[str, List[str]]:
     prompt = (
         "You are an analyst. Summarize the following document in a concise paragraph, "
         "then extract 5-8 key bullet points. Be concrete and faithful to the text.\n\n"
@@ -65,12 +74,12 @@ def summarize_text(text: str, model: str = "gpt-4o-mini", max_tokens: int = 512)
     )
 
     resp = client.chat.completions.create(
-        model=model,
+        model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "You are a professional document analyst."},
             {"role": "user", "content": prompt},
         ],
-        max_tokens=max_tokens,
+        max_tokens=512,
         temperature=0.2,
     )
 
@@ -88,7 +97,11 @@ def summarize_text(text: str, model: str = "gpt-4o-mini", max_tokens: int = 512)
     for line in lines:
         if line.startswith(('-', '*')):
             in_bullets = True
-            bullets.append(line.lstrip('-* ').strip())
+            # Clean up bullet points and remove redundant headers
+            clean_line = line.lstrip('-* ').strip()
+            # Skip lines that are just headers like "Key Bullet Points:" or "Key Points:"
+            if not clean_line.lower().endswith((':', 'points:', 'bullet points:')):
+                bullets.append(clean_line)
         elif in_bullets:
             bullets.append(line)
         else:
@@ -103,11 +116,11 @@ class RetrieverState:
     embeddings: np.ndarray  # shape: (num_chunks, dim)
     embedding_model: str
 
-def build_retriever(text: str, embedding_model: str = "text-embedding-3-small") -> RetrieverState:
+def build_retriever(text: str) -> RetrieverState:
     chunks = _chunk_text(text)
-    resp = client.embeddings.create(model=embedding_model, input=chunks)
+    resp = client.embeddings.create(model="text-embedding-3-small", input=chunks)
     vectors = np.array([d.embedding for d in resp.data], dtype=np.float32)
-    return RetrieverState(chunks=chunks, embeddings=vectors, embedding_model=embedding_model)
+    return RetrieverState(chunks=chunks, embeddings=vectors, embedding_model="text-embedding-3-small")
 
 def _cosine_sim_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     a_norm = a / (np.linalg.norm(a, axis=1, keepdims=True) + 1e-8)
@@ -117,7 +130,7 @@ def _cosine_sim_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 def _top_k_indices(similarities: np.ndarray, k: int = 5) -> List[int]:
     return list(np.argsort(-similarities)[:k])
 
-def answer_question(question: str, retriever: RetrieverState, model: str = "gpt-4o-mini") -> str:
+def answer_question(question: str, retriever: RetrieverState) -> str:
     # embed question
     q_embed = client.embeddings.create(model=retriever.embedding_model, input=[question]).data[0].embedding
     q_vec = np.array(q_embed, dtype=np.float32).reshape(1, -1)
@@ -133,90 +146,112 @@ def answer_question(question: str, retriever: RetrieverState, model: str = "gpt-
     ]
 
     resp = client.chat.completions.create(
-        model=model,
+        model="gpt-4o-mini",
         messages=messages,
         max_tokens=300,
         temperature=0.2,
     )
     return resp.choices[0].message.content or ""
 
-# Streamlit UI
-with st.sidebar:
-    st.header("Settings")
-    openai_key_present = bool(os.getenv("OPENAI_API_KEY"))
-    st.write("OpenAI API key:", "✅ found" if openai_key_present else "❌ missing")
-    default_model = st.selectbox(
-        "Model",
-        options=["gpt-4o-mini", "gpt-4o", "o4-mini"],
-        index=0,
-        help="Model used for summarization and Q&A",
-    )
-    embed_model = st.selectbox(
-        "Embedding model",
-        options=["text-embedding-3-small", "text-embedding-3-large"],
-        index=0,
-        help="Model used to embed document chunks for retrieval",
-    )
-    max_summary_tokens = st.slider("Max summary tokens", 256, 2048, 512, 64)
+# Professional UI Layout
+# Check API key status
+openai_key_present = bool(os.getenv("OPENAI_API_KEY"))
 
-uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])  # type: ignore
+if not openai_key_present:
+    st.error("OpenAI API key not found. Please set your OPENAI_API_KEY environment variable.")
+    st.info("Create a .env file in the project root with: OPENAI_API_KEY=sk-your-actual-key-here")
+    st.stop()
+
+# Professional file upload section
+st.markdown("""
+<div class="upload-container">
+    <div class="upload-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.89 22 5.99 22H18C19.1 22 20 21.1 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </div>
+    <div class="upload-text">Upload Document</div>
+    <div class="upload-subtext">Select a PDF document for AI-powered analysis and summarization</div>
+</div>
+""", unsafe_allow_html=True)
+
+uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="collapsed")
 
 if uploaded_file is None:
-    st.info("Upload a PDF to begin.")
+    st.info("Please upload a PDF document to begin analysis.")
     st.stop()
 
-# Check file size - simple approach
+# File validation and status
 file_size_mb = len(uploaded_file.getvalue()) / (1024 * 1024)
-st.info(f"📄 File size: {file_size_mb:.1f} MB")
 
 if file_size_mb > 32:
-    st.error(f"❌ File too large ({file_size_mb:.1f} MB). Cloud Run has a 32MB request limit.")
-    st.info("💡 Please use a PDF under 32MB. Your document is not saved anywhere.")
+    st.markdown(f"""
+    <div class="file-info-card file-info-error">
+        <strong>File Size Error</strong><br>
+        Document size ({file_size_mb:.1f} MB) exceeds the 32MB limit. Please use a smaller file.
+    </div>
+    """, unsafe_allow_html=True)
     st.stop()
 elif file_size_mb > 25:
-    st.warning(f"⚠️ Large file ({file_size_mb:.1f} MB) - close to Cloud Run's 32MB limit")
-    st.info("This should work, but may be slow to process")
+    st.markdown(f"""
+    <div class="file-info-card file-info-warning">
+        <strong>Large Document</strong><br>
+        Processing {file_size_mb:.1f} MB document. This may take additional time.
+    </div>
+    """, unsafe_allow_html=True)
 else:
-    st.success(f"✅ File size ({file_size_mb:.1f} MB) should work fine")
+    st.markdown(f"""
+    <div class="file-info-card file-info-success">
+        <strong>Document Loaded</strong><br>
+        {uploaded_file.name} ({file_size_mb:.1f} MB)
+    </div>
+    """, unsafe_allow_html=True)
 
 # Extract text
 try:
-    with st.status("Extracting text…", expanded=False):
+    with st.status("Extracting text from document...", expanded=False):
         pdf_bytes = uploaded_file.read()
         text = extract_text_from_pdf(io.BytesIO(pdf_bytes))
         
     if not text.strip():
-        st.error("No extractable text found in the PDF.")
+        st.error("No extractable text found in the PDF document.")
         st.stop()
         
 except Exception as e:
     st.error(f"Error processing PDF: {str(e)}")
     st.stop()
 
-# Summarize
-with st.status("Summarizing…", expanded=False):
-    summary, bullets = summarize_text(text, model=default_model, max_tokens=max_summary_tokens)
+# Generate summary
+with st.status("Generating AI summary...", expanded=False):
+    summary, bullets = summarize_text(text)
 
-st.subheader("Summary")
-st.write(summary)
+# Display results in professional sections
+st.markdown('<div class="content-section">', unsafe_allow_html=True)
+st.markdown('<div class="section-title">Document Summary</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="summary-content">{summary}</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-st.subheader("Key Points")
+st.markdown('<div class="content-section">', unsafe_allow_html=True)
+st.markdown('<div class="section-title">Key Insights</div>', unsafe_allow_html=True)
 for bullet in bullets:
-    st.markdown(f"- {bullet}")
+    st.markdown(f'<div class="key-point">{bullet}</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # Build retriever for Q&A
-with st.status("Indexing for Q&A…", expanded=False):
-    retriever_state = build_retriever(text, embedding_model=embed_model)
+with st.status("Building search index...", expanded=False):
+    retriever_state = build_retriever(text)
 
-st.divider()
-st.subheader("Ask questions about the document")
-question = st.text_input("Your question")
+st.markdown('<div class="qa-container">', unsafe_allow_html=True)
+st.markdown('<div class="section-title">Document Q&A</div>', unsafe_allow_html=True)
+st.markdown('<p>Ask specific questions about the document content.</p>', unsafe_allow_html=True)
+
+question = st.text_input("", placeholder="Enter your question about the document...", label_visibility="collapsed")
 if question:
-    with st.status("Thinking…", expanded=False):
-        answer = answer_question(
-            question=question,
-            retriever=retriever_state,
-            model=default_model,
-        )
-    st.markdown("**Answer:**")
-    st.write(answer)
+    with st.status("Analyzing document...", expanded=False):
+        answer = answer_question(question=question, retriever=retriever_state)
+    st.markdown('<div class="answer-content"><strong>Answer:</strong><br><br>' + answer + '</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
