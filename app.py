@@ -229,6 +229,7 @@ st.markdown("""
     
     .stTextInput > div > div > input {
         background: #ffffff !important;
+        color: #1e293b !important;
         border: 1px solid #e2e8f0 !important;
         border-radius: 0.5rem !important;
     }
