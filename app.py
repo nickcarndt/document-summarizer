@@ -25,8 +25,7 @@ st.set_page_config(
 )
 
 # Load custom CSS - use comprehensive inline CSS for deployment compatibility
-    # Fallback to inline CSS if file not found
-    st.markdown("""
+st.markdown("""
     <style>
     /* Import professional fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -213,8 +212,6 @@ st.set_page_config(
     }
     </style>
     """, unsafe_allow_html=True)
-except Exception as e:
-    st.error("Failed to load custom styling")
 
 # Professional header
 st.markdown("""
