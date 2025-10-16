@@ -24,36 +24,193 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Load custom CSS with proper error handling
-try:
-    with open('.streamlit/style.css', 'r') as f:
-        css_content = f.read()
-        st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
-except FileNotFoundError:
+# Load custom CSS - use comprehensive inline CSS for deployment compatibility
     # Fallback to inline CSS if file not found
     st.markdown("""
     <style>
-    .main-header { padding: 5rem 0 4rem 0; margin-bottom: 4rem; background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); border-bottom: 1px solid #e2e8f0; }
-    .main-header h1 { font-size: 2.5rem; font-weight: 700; color: #1e293b; margin: 0; }
-    .main-header .subtitle { font-size: 1.125rem; color: #64748b; margin-top: 0.5rem; }
-    .upload-container { background: #ffffff; border: 2px dashed #e2e8f0; border-radius: 0.75rem; padding: 3rem 2rem; text-align: center; margin: 2rem 0; }
-    .upload-icon { width: 80px; height: 80px; background: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto; color: white; font-size: 2rem; }
-    .upload-text { font-size: 1.25rem; font-weight: 500; color: #1e293b; margin-bottom: 0.5rem; }
-    .upload-subtext { font-size: 0.875rem; color: #64748b; }
-    .file-info-card { background: #ffffff; border-radius: 0.5rem; padding: 1.5rem; margin: 1rem 0; border-left: 4px solid #2563eb; }
-    .file-info-success { border-left-color: #059669; }
-    .file-info-warning { border-left-color: #d97706; }
-    .file-info-error { border-left-color: #dc2626; }
-    .content-section { background: #ffffff; border-radius: 0.75rem; padding: 2rem; margin: 1.5rem 0; border: 1px solid #e2e8f0; }
-    .section-title { font-size: 1.5rem; font-weight: 600; color: #1e293b; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0; }
-    .summary-content { font-size: 1.125rem; line-height: 1.7; color: #1e293b; background: #f8fafc; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #2563eb; }
-    .key-point { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.375rem; padding: 0.9rem; margin: 0.7rem 0; }
-    .qa-container { background: #ffffff; border-radius: 0.75rem; padding: 2rem; margin: 2rem 0; border: 1px solid #e2e8f0; }
-    .answer-content { background: #fafbfc; border-radius: 0.5rem; padding: 1.5rem; border-left: 4px solid #059669; font-size: 1rem; line-height: 1.6; color: #1e293b; margin-top: 1rem; border: 1px solid #e2e8f0; }
-    .stFileUploader > div > div > button { background: #f0f0f0 !important; color: #1e293b !important; border: 1px solid #e2e8f0 !important; border-radius: 0.5rem !important; }
-    .stFileUploader > div > div > button:hover { background: #2563eb !important; color: white !important; border-color: #2563eb !important; }
-    .stTextInput > div > div > input { background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 0.5rem !important; }
-    .stTextInput > div > div > input:focus { border-color: #2563eb !important; box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1) !important; }
+    /* Import professional fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Global styles */
+    .stApp {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+    }
+    
+    /* Header styling */
+    .main-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-bottom: 1px solid #e2e8f0;
+        padding: 5rem 0 4rem 0;
+        margin-bottom: 4rem;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    }
+    
+    .main-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        letter-spacing: -0.025em;
+    }
+    
+    .main-header .subtitle {
+        font-size: 1.125rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+    
+    /* Upload container */
+    .upload-container {
+        background: #ffffff;
+        border: 2px dashed #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 3rem 2rem;
+        text-align: center;
+        margin: 2rem 0;
+    }
+    
+    .upload-icon {
+        width: 80px;
+        height: 80px;
+        background: #2563eb;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem auto;
+        color: white;
+        font-size: 2rem;
+    }
+    
+    .upload-text {
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+    
+    .upload-subtext {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+    
+    /* File info cards */
+    .file-info-card {
+        background: #ffffff;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        border-left: 4px solid #2563eb;
+    }
+    
+    .file-info-success {
+        border-left-color: #059669;
+    }
+    
+    .file-info-warning {
+        border-left-color: #d97706;
+    }
+    
+    .file-info-error {
+        border-left-color: #dc2626;
+    }
+    
+    /* Content sections */
+    .content-section {
+        background: #ffffff;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        margin: 1.5rem 0;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .summary-content {
+        font-size: 1.125rem;
+        line-height: 1.7;
+        color: #1e293b;
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #2563eb;
+    }
+    
+    .key-point {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.375rem;
+        padding: 0.9rem;
+        margin: 0.7rem 0;
+    }
+    
+    .qa-container {
+        background: #ffffff;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        margin: 2rem 0;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .answer-content {
+        background: #fafbfc;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        border-left: 4px solid #059669;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #1e293b;
+        margin-top: 1rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    /* CRITICAL: File uploader button styling - multiple selectors for maximum coverage */
+    .stFileUploader > div > div > button,
+    .stFileUploader button,
+    div[data-testid="stFileUploader"] button,
+    .stFileUploader > div > div > div > button {
+        background: #f0f0f0 !important;
+        color: #1e293b !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 0.5rem !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 500 !important;
+        font-size: 0.875rem !important;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+    }
+    
+    .stFileUploader > div > div > button:hover,
+    .stFileUploader button:hover,
+    div[data-testid="stFileUploader"] button:hover,
+    .stFileUploader > div > div > div > button:hover {
+        background: #2563eb !important;
+        color: white !important;
+        border-color: #2563eb !important;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    /* Text input styling */
+    .stTextInput > div > div > input {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 0.5rem !important;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1) !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 except Exception as e:
