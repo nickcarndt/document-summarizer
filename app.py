@@ -37,6 +37,13 @@ st.markdown("""
         color: #1e293b;
     }
     
+    /* Main content container with left padding */
+    .main .block-container {
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        max-width: 100% !important;
+    }
+    
     /* Header styling */
     .main-header {
         background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
@@ -149,7 +156,7 @@ st.markdown("""
         border: 1px solid #e2e8f0;
         border-radius: 0.375rem;
         padding: 0.9rem;
-        margin: 0.7rem 0;
+        margin: 0.5rem 0;
     }
     
     .qa-container {
@@ -208,6 +215,16 @@ st.markdown("""
     
     .stTextInput > div > div > input:focus {
         border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1) !important;
+        outline: none !important;
+    }
+    
+    /* Remove all default focus outlines */
+    .stTextInput input:focus,
+    .stTextInput textarea:focus,
+    input:focus,
+    textarea:focus {
+        outline: none !important;
         box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1) !important;
     }
     </style>
@@ -285,7 +302,10 @@ def summarize_text(text: str) -> Tuple[str, List[str]]:
             # Clean up bullet points and remove redundant headers
             clean_line = line.lstrip('-* ').strip()
             # Skip lines that are just headers like "Key Bullet Points:" or "Key Points:"
-            if not clean_line.lower().endswith((':', 'points:', 'bullet points:', 'insights:', 'summary:')):
+            # Skip lines that are just headers or redundant bullet point labels
+            clean_lower = clean_line.lower()
+            if not (clean_lower.endswith((':', 'points:', 'bullet points:', 'insights:', 'summary:')) or 
+                    clean_lower in ('key bullet points', 'key points', 'bullet points', 'key insights', 'insights', 'summary')):
                 bullets.append(clean_line)
         elif in_bullets:
             bullets.append(line)
