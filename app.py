@@ -1,5 +1,6 @@
 import os
 import io
+import re
 from dataclasses import dataclass
 from typing import List, Tuple
 from io import BytesIO
@@ -30,6 +31,9 @@ st.markdown("""
     /* Import professional fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
+    /* Nuke all default focus outlines globally */
+    *:focus { outline: none !important; }
+    
     /* Global styles */
     .stApp {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -37,10 +41,20 @@ st.markdown("""
         color: #1e293b;
     }
     
-    /* Main content container with left padding */
+    /* Main content container with left padding - more specific selectors */
+    .main > div > div > div > div {
+        max-width: 100% !important;
+    }
+    .main > .block-container {
+        padding-left: 3rem !important;
+        padding-right: 3rem !important;
+    }
+    div[data-testid="stVerticalBlock"] > div:first-child {
+        padding-left: 3rem !important;
+    }
     .main .block-container {
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
+        padding-left: 3rem !important;
+        padding-right: 3rem !important;
         max-width: 100% !important;
     }
     
@@ -206,7 +220,13 @@ st.markdown("""
         transform: translateY(-1px) !important;
     }
     
-    /* Text input styling */
+    /* Text input styling - aggressive focus outline removal */
+    input:focus, textarea:focus, .stTextInput input:focus {
+        outline: none !important;
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
+    }
+    
     .stTextInput > div > div > input {
         background: #ffffff !important;
         border: 1px solid #e2e8f0 !important;
@@ -215,7 +235,7 @@ st.markdown("""
     
     .stTextInput > div > div > input:focus {
         border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1) !important;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
         outline: none !important;
     }
     
@@ -225,7 +245,7 @@ st.markdown("""
     input:focus,
     textarea:focus {
         outline: none !important;
-        box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1) !important;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -302,10 +322,10 @@ def summarize_text(text: str) -> Tuple[str, List[str]]:
             # Clean up bullet points and remove redundant headers
             clean_line = line.lstrip('-* ').strip()
             # Skip lines that are just headers like "Key Bullet Points:" or "Key Points:"
-            # Skip lines that are just headers or redundant bullet point labels
-            clean_lower = clean_line.lower()
-            if not (clean_lower.endswith((':', 'points:', 'bullet points:', 'insights:', 'summary:')) or 
-                    clean_lower in ('key bullet points', 'key points', 'bullet points', 'key insights', 'insights', 'summary')):
+            # Skip lines that are just headers or redundant bullet point labels using aggressive regex
+            clean_lower = clean_line.lower().strip()
+            # Use regex to catch all variations including asterisks and punctuation
+            if not re.search(r'^(key\s+)?(bullet\s+)?points:?\*?$|^key\s+insights:?\*?$|^insights:?\*?$|^summary:?\*?$', clean_lower, re.IGNORECASE):
                 bullets.append(clean_line)
         elif in_bullets:
             bullets.append(line)
