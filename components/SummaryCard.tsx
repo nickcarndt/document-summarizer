@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import toast from 'react-hot-toast';
 
 interface SummaryCardProps {
   model: 'claude' | 'openai';
@@ -33,11 +34,14 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
 
       if (response.ok) {
         setFeedback(rating);
+        toast.success('Feedback recorded!');
       } else {
         const data = await response.json();
+        toast.error(data.error || 'Failed to save feedback. Please try again.');
         console.error('[FEEDBACK] Failed to submit:', data.error || 'Unknown error');
       }
     } catch (error) {
+      toast.error('Failed to save feedback. Please try again.');
       console.error('[FEEDBACK] Failed to submit:', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsSubmitting(false);

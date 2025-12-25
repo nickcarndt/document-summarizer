@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface CompareButtonsProps {
   referenceType: 'summary' | 'query';
@@ -28,11 +29,14 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
 
       if (response.ok) {
         setSelected(winner);
+        toast.success('Vote recorded!');
       } else {
         const data = await response.json();
+        toast.error(data.error || 'Failed to save vote. Please try again.');
         console.error('Failed to submit comparison:', data.error);
       }
     } catch (error) {
+      toast.error('Failed to save vote. Please try again.');
       console.error('Failed to submit comparison:', error);
     } finally {
       setSubmitting(false);

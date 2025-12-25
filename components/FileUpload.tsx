@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface FileUploadProps {
   onUploadSuccess: (documentId: string, filename: string, charCount: number) => void;
@@ -84,10 +85,12 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
         throw new Error('Invalid response format from server');
       }
 
+      toast.success('PDF uploaded successfully!');
       onUploadSuccess(data.documentId, data.filename, data.charCount);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload file';
       setError(errorMessage);
+      toast.error(errorMessage);
       console.error('[FileUpload] Upload error:', err);
     } finally {
       setUploading(false);
