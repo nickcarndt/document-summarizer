@@ -39,3 +39,7 @@ next-env.d.ts
 
 # drizzle
 drizzle/
+
+# python virtual environment (legacy)
+.venv/
+venv/
