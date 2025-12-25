@@ -38,15 +38,37 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
         body: formData,
       });
 
+      // Check if response is ok before trying to parse JSON
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Upload failed');
+        let errorMessage = 'Upload failed';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (parseError) {
+          // If response isn't JSON, use status text
+          errorMessage = response.statusText || `Server error (${response.status})`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      // Parse JSON response
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Validate response has required fields
+      if (!data.documentId || !data.filename) {
+        throw new Error('Invalid response format from server');
+      }
+
       onUploadSuccess(data.documentId, data.filename, data.charCount);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload file');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload file';
+      setError(errorMessage);
+      console.error('[FileUpload] Upload error:', err);
     } finally {
       setUploading(false);
     }
