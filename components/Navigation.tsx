@@ -14,7 +14,7 @@ export default function Navigation() {
             <Link
               href="/"
               className={`inline-flex items-center px-4 py-2 border-b-2 text-sm font-medium transition-colors ${
-                pathname === '/'
+                pathname === '/' || pathname?.startsWith('/document')
                   ? 'border-orange-500 text-orange-400'
                   : 'border-transparent text-gray-300 hover:text-white hover:border-gray-300'
               }`}
