@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 interface SummaryCardProps {
@@ -11,9 +12,15 @@ interface SummaryCardProps {
 }
 
 export default function SummaryCard({ model, content, latencyMs, referenceId, referenceType }: SummaryCardProps) {
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleFeedback = async (rating: 'up' | 'down') => {
+    if (feedback !== null || isSubmitting) return; // Already voted or submitting
+    
+    setIsSubmitting(true);
     try {
-      await fetch('/api/feedback', {
+      const response = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -23,8 +30,17 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
           rating,
         }),
       });
+
+      if (response.ok) {
+        setFeedback(rating);
+      } else {
+        const data = await response.json();
+        console.error('[FEEDBACK] Failed to submit:', data.error || 'Unknown error');
+      }
     } catch (error) {
       console.error('[FEEDBACK] Failed to submit:', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -51,21 +67,35 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
       <div className="flex gap-2 mt-4">
         <button
           onClick={() => handleFeedback('up')}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors"
+          disabled={isSubmitting || feedback !== null}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all ${
+            feedback === 'up'
+              ? 'bg-green-600 text-white'
+              : feedback === 'down'
+              ? 'bg-gray-700 opacity-50 cursor-not-allowed'
+              : 'bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-50'
+          }`}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
           </svg>
-          <span>Thumbs Up</span>
+          <span>{feedback === 'up' ? 'Voted!' : 'Thumbs Up'}</span>
         </button>
         <button
           onClick={() => handleFeedback('down')}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors"
+          disabled={isSubmitting || feedback !== null}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all ${
+            feedback === 'down'
+              ? 'bg-red-600 text-white'
+              : feedback === 'up'
+              ? 'bg-gray-700 opacity-50 cursor-not-allowed'
+              : 'bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-50'
+          }`}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
           </svg>
-          <span>Thumbs Down</span>
+          <span>{feedback === 'down' ? 'Voted!' : 'Thumbs Down'}</span>
         </button>
       </div>
     </div>
