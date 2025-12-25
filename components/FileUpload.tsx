@@ -18,6 +18,14 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
         setError('Only PDF files are supported');
         return;
       }
+      
+      // Check file size (50MB limit)
+      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+      if (selectedFile.size > MAX_FILE_SIZE) {
+        setError(`File too large. Maximum size is 50MB. Your file is ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB.`);
+        return;
+      }
+      
       setFile(selectedFile);
       setError(null);
     }

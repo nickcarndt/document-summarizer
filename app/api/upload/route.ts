@@ -4,11 +4,28 @@ import { documents } from '@/db/schema';
 import { extractTextFromPDF } from '@/lib/pdf';
 import { logger } from '@/lib/logger';
 
+// Increase body size limit for this route
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds for large file processing
+
 export async function POST(request: NextRequest) {
   try {
     logger.info('PDF upload request received', 'UPLOAD');
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    
+    // Check file size (50MB limit)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    if (file.size > MAX_FILE_SIZE) {
+      logger.warn('File too large', 'UPLOAD', { 
+        filename: file.name, 
+        size: file.size,
+        maxSize: MAX_FILE_SIZE 
+      });
+      return NextResponse.json({ 
+        error: `File too large. Maximum size is 50MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.` 
+      }, { status: 413 });
+    }
     
     if (!file) {
       logger.warn('No file provided in upload request', 'UPLOAD');
