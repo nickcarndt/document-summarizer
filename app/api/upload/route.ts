@@ -14,6 +14,11 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     
+    if (!file) {
+      logger.warn('No file provided in upload request', 'UPLOAD');
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+    
     // Check file size (50MB limit)
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
     if (file.size > MAX_FILE_SIZE) {
@@ -25,11 +30,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: `File too large. Maximum size is 50MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.` 
       }, { status: 413 });
-    }
-    
-    if (!file) {
-      logger.warn('No file provided in upload request', 'UPLOAD');
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
     
     logger.debug('File received', 'UPLOAD', { filename: file.name, size: file.size });
