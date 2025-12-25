@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Summarize error:', error);
+    console.error('[SUMMARIZE] Error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ error: 'Failed to generate summaries' }, { status: 500 });
   }
 }

@@ -78,7 +78,7 @@ Please answer based on the context provided.`;
     });
     
   } catch (error) {
-    console.error('Query error:', error);
+    console.error('[QUERY] Error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ error: 'Failed to process query' }, { status: 500 });
   }
 }

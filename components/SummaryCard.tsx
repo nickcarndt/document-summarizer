@@ -22,7 +22,7 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
         }),
       });
     } catch (error) {
-      console.error('Failed to submit feedback:', error);
+      console.error('[FEEDBACK] Failed to submit:', error instanceof Error ? error.message : 'Unknown error');
     }
   };
 

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id: record.id });
     
   } catch (error) {
-    console.error('Compare error:', error);
+    console.error('[COMPARE] Error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ error: 'Failed to save comparison' }, { status: 500 });
   }
 }

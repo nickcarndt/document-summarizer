@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Embed error:', error);
+    console.error('[EMBED] Error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ error: 'Failed to embed document' }, { status: 500 });
   }
 }

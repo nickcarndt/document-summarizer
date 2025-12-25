@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { documents, queries, summaries, feedback, comparisons } from '@/db/schema';
-import { sql, eq, desc } from 'drizzle-orm';
+import { sql, desc } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -72,7 +72,7 @@ export async function GET() {
     });
     
   } catch (error) {
-    console.error('Evals error:', error);
+    console.error('[EVALS] Error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ error: 'Failed to get eval stats' }, { status: 500 });
   }
 }

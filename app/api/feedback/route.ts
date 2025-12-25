@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id: record.id });
     
   } catch (error) {
-    console.error('Feedback error:', error);
+    console.error('[FEEDBACK] Error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ error: 'Failed to save feedback' }, { status: 500 });
   }
 }
