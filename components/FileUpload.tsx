@@ -19,10 +19,22 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
         return;
       }
       
-      // Check file size (50MB limit)
-      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-      if (selectedFile.size > MAX_FILE_SIZE) {
-        setError(`File too large. Maximum size is 50MB. Your file is ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB.`);
+      // Check file size - Vercel has a 4.5MB limit for serverless functions
+      const MAX_FILE_SIZE_VERCEL = 4.5 * 1024 * 1024; // 4.5MB (Vercel limit)
+      const MAX_FILE_SIZE_LOCAL = 50 * 1024 * 1024; // 50MB (local limit)
+      
+      // Use the stricter Vercel limit for production deployments
+      const isVercel = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
+      const maxSize = isVercel ? MAX_FILE_SIZE_VERCEL : MAX_FILE_SIZE_LOCAL;
+      const limitName = isVercel ? '4.5MB (Vercel limit)' : '50MB';
+      
+      if (selectedFile.size > maxSize) {
+        const fileSizeMB = (selectedFile.size / 1024 / 1024).toFixed(2);
+        let errorMsg = `File too large. Maximum size is ${limitName}. Your file is ${fileSizeMB}MB.`;
+        if (isVercel && selectedFile.size > MAX_FILE_SIZE_VERCEL) {
+          errorMsg += ' Consider using a smaller PDF or running locally for larger files.';
+        }
+        setError(errorMsg);
         return;
       }
       
