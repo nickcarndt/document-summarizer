@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import ProcessingSteps from '@/components/ProcessingSteps';
 import SideBySide from '@/components/SideBySide';
+import SummarySkeleton from '@/components/SummarySkeleton';
 
 type ProcessingStep = {
   label: string;
@@ -28,11 +29,6 @@ export default function DocumentPage() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check if document already has summaries, or start processing
-    loadDocument();
-  }, [docId]);
 
   const loadDocument = async () => {
     setLoading(true);
@@ -92,6 +88,26 @@ export default function DocumentPage() {
     }
   };
 
+  useEffect(() => {
+    // First fetch document info
+    const fetchDocumentInfo = async () => {
+      try {
+        const response = await fetch(`/api/document/${docId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFilename(data.filename);
+        }
+      } catch (error) {
+        console.error('Failed to fetch document:', error);
+      }
+    };
+    
+    fetchDocumentInfo();
+    // Then start processing
+    loadDocument();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docId]);
+
   if (loading && !summaries) {
     return (
       <div className="min-h-screen bg-gray-900">
@@ -148,6 +164,13 @@ export default function DocumentPage() {
         {error && (
           <div className="mb-4 p-4 bg-red-900/50 border border-red-700 rounded-md text-red-200">
             {error}
+          </div>
+        )}
+
+        {!summaries && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <SummarySkeleton />
+            <SummarySkeleton />
           </div>
         )}
 

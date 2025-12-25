@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import toast from 'react-hot-toast';
+import { formatLatency } from '@/lib/utils';
 
 interface SummaryCardProps {
   model: 'claude' | 'openai';
@@ -49,18 +50,17 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
   };
 
   const modelName = model === 'claude' ? 'Claude' : 'OpenAI';
-  const latencySeconds = (latencyMs / 1000).toFixed(1);
 
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold">{modelName}</h3>
-        <span className={`px-3 py-1 rounded-md text-sm font-medium ${
+        <span className={`px-2 py-1 rounded text-xs font-medium bg-gray-700 ${
           model === 'claude' 
-            ? 'bg-orange-500/20 text-orange-400' 
-            : 'bg-green-500/20 text-green-400'
+            ? 'text-orange-400' 
+            : 'text-green-400'
         }`}>
-          {latencySeconds}s
+          {formatLatency(latencyMs)}
         </span>
       </div>
       

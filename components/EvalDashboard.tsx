@@ -165,13 +165,19 @@ export default function EvalDashboard() {
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4">Claude Avg Latency</h3>
           <p className="text-3xl font-bold text-orange-400">
-            {(stats.claudeAvgLatencyMs / 1000).toFixed(1)}s
+            {stats.claudeAvgLatencyMs < 1000 
+              ? `${Math.round(stats.claudeAvgLatencyMs)}ms`
+              : `${(stats.claudeAvgLatencyMs / 1000).toFixed(1)}s`
+            }
           </p>
         </div>
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4">OpenAI Avg Latency</h3>
           <p className="text-3xl font-bold text-green-400">
-            {(stats.openaiAvgLatencyMs / 1000).toFixed(1)}s
+            {stats.openaiAvgLatencyMs < 1000 
+              ? `${Math.round(stats.openaiAvgLatencyMs)}ms`
+              : `${(stats.openaiAvgLatencyMs / 1000).toFixed(1)}s`
+            }
           </p>
         </div>
       </div>
@@ -180,7 +186,10 @@ export default function EvalDashboard() {
       <div className="bg-gray-800 rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Recent Comparisons</h3>
         {stats.recentComparisons.length === 0 ? (
-          <p className="text-gray-400">No comparisons yet</p>
+          <div className="text-center py-8 text-gray-400">
+            <p className="mb-2">No comparisons yet</p>
+            <p className="text-sm">Upload a document and vote on responses to see data here</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

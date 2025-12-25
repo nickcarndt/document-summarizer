@@ -13,9 +13,21 @@ export default function DocumentQAPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch document filename if needed
-    // For now, we'll just use the docId directly
-    setLoading(false);
+    const fetchDocument = async () => {
+      try {
+        const response = await fetch(`/api/document/${docId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFilename(data.filename);
+        }
+      } catch (error) {
+        console.error('Failed to fetch document:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDocument();
   }, [docId]);
 
   if (loading) {
