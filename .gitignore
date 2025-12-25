@@ -43,3 +43,6 @@ drizzle/
 # python virtual environment (legacy)
 .venv/
 venv/
+
+# streamlit (legacy)
+.streamlit/
