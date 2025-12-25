@@ -5,6 +5,12 @@
 
 ## Files Deleted
 - `.venv/` - Removed from git tracking (Python virtual environment, not needed for Next.js project)
+- `app.py` - Legacy Streamlit application file
+- `Dockerfile` - Legacy Docker configuration for Streamlit
+- `requirements.txt` - Legacy Python dependencies
+- `cloudbuild.yaml` - Legacy Google Cloud Build configuration
+- `docs/ci-check.md` - Legacy CI documentation
+- `docs/deployment-guide.md` - Legacy Google Cloud deployment documentation
 
 ## Files Modified
 
