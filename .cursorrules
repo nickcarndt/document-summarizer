@@ -1,0 +1,72 @@
+## Project: Document Summarizer V2
+
+### Stack (DO NOT CHANGE)
+- Next.js 14 App Router with TypeScript
+- Tailwind CSS for styling
+- Drizzle ORM with Neon Postgres
+- @anthropic-ai/sdk for Claude API
+- openai SDK for OpenAI API
+- pdf-parse for PDF text extraction
+- Vercel for deployment
+
+### Critical Rules
+
+1. **API Routes**: All API routes go in `app/api/*/route.ts`. Use `export async function POST()` pattern.
+
+2. **Database**: Use Drizzle ORM. Schema is in `db/schema.ts`. Do not use raw SQL.
+
+3. **Embeddings**: ONLY use OpenAI text-embedding-3-small for embeddings. Claude does not have an embedding model.
+
+4. **Parallel API calls**: When calling both Claude and OpenAI, use Promise.all() for parallel execution:
+```typescript
+   const [claudeResult, openaiResult] = await Promise.all([
+     generateWithClaude(prompt),
+     generateWithOpenAI(prompt)
+   ]);
+```
+
+5. **Error handling**: Wrap all API calls in try/catch. Return proper HTTP status codes.
+
+6. **Latency tracking**: Measure latency for EVERY LLM call:
+```typescript
+   const start = Date.now();
+   const response = await client.messages.create(...);
+   const latencyMs = Date.now() - start;
+```
+
+7. **No hardcoded secrets**: Use environment variables for all API keys:
+   - ANTHROPIC_API_KEY
+   - OPENAI_API_KEY  
+   - DATABASE_URL
+
+8. **Chunking parameters**: 
+   - Chunk size: 1500 characters
+   - Overlap: 200 characters
+   - Do not change without explicit instruction
+
+9. **Models to use**:
+   - Claude: claude-sonnet-4-20250514
+   - OpenAI: gpt-4o-mini
+   - Embeddings: text-embedding-3-small
+
+10. **Component structure**: Keep components small and focused. One component per file.
+
+### File Creation Order
+1. db/schema.ts (database schema)
+2. lib/db.ts (database connection)
+3. lib/anthropic.ts (Claude wrapper)
+4. lib/openai.ts (OpenAI wrapper)
+5. lib/embeddings.ts (embedding generation)
+6. lib/chunking.ts (text chunking)
+7. lib/retrieval.ts (cosine similarity search)
+8. API routes
+9. Components
+10. Pages
+
+### DO NOT
+- Do not add authentication
+- Do not use LangChain or LlamaIndex (implement RAG directly)
+- Do not change the database schema without explicit approval
+- Do not use streaming responses (keep it simple for v1)
+- Do not add features not in the spec
+
