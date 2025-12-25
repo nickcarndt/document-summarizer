@@ -33,11 +33,28 @@ export default function EvalDashboard() {
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/evals');
-      if (!response.ok) throw new Error('Failed to fetch stats');
+      if (!response.ok) {
+        let errorMessage = 'Failed to fetch stats';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+          
+          // Check if it's a database error
+          if (errorMessage.includes('relation') && errorMessage.includes('does not exist')) {
+            errorMessage = 'Database not initialized. Please run database migrations first.';
+          }
+        } catch (parseError) {
+          // If response isn't JSON, use status text
+          errorMessage = response.statusText || `Server error (${response.status})`;
+        }
+        throw new Error(errorMessage);
+      }
       const data = await response.json();
       setStats(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load stats');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load stats';
+      setError(errorMessage);
+      console.error('[EvalDashboard] Error fetching stats:', err);
     } finally {
       setLoading(false);
     }
@@ -54,7 +71,18 @@ export default function EvalDashboard() {
   if (error || !stats) {
     return (
       <div className="bg-gray-800 rounded-lg p-6">
-        <p className="text-red-400">Error: {error || 'Failed to load stats'}</p>
+        <div className="text-red-400 mb-4">
+          <p className="font-semibold mb-2">Error: {error || 'Failed to load stats'}</p>
+          {error?.includes('Database not initialized') && (
+            <div className="mt-4 p-4 bg-gray-900 rounded-md border border-gray-700">
+              <p className="text-sm text-gray-300 mb-2">To fix this issue:</p>
+              <ol className="list-decimal list-inside text-sm text-gray-400 space-y-1">
+                <li>Enable pgvector extension in Neon: <code className="bg-gray-800 px-1 rounded">CREATE EXTENSION IF NOT EXISTS vector;</code></li>
+                <li>Run migrations: <code className="bg-gray-800 px-1 rounded">npm run db:generate && npm run db:migrate</code></li>
+              </ol>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
