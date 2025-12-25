@@ -1,7 +1,0 @@
-streamlit
-openai
-pypdf
-tiktoken
-numpy
-python-dotenv
-httpx
