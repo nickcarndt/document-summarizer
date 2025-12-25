@@ -1,5 +1,7 @@
 'use client';
 
+import ReactMarkdown from 'react-markdown';
+
 interface SummaryCardProps {
   model: 'claude' | 'openai';
   content: string;
@@ -42,8 +44,8 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
         </span>
       </div>
       
-      <div className="prose prose-invert max-w-none mb-4">
-        <div className="text-gray-300 whitespace-pre-wrap">{content}</div>
+      <div className="prose prose-invert prose-sm max-w-none mb-4 text-gray-300">
+        <ReactMarkdown>{content}</ReactMarkdown>
       </div>
 
       <div className="flex gap-2 mt-4">

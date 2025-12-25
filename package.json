@@ -13,12 +13,14 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
     "@neondatabase/serverless": "^0.9.0",
+    "@tailwindcss/typography": "^0.5.19",
     "drizzle-orm": "^0.33.0",
     "next": "14.2.35",
     "openai": "^4.52.0",
     "pdf-parse": "^1.1.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@types/node": "^20",
