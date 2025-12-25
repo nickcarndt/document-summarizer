@@ -12,7 +12,7 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
   const [submitting, setSubmitting] = useState(false);
 
   const handleCompare = async (winner: 'claude' | 'openai' | 'tie') => {
-    if (submitting) return;
+    if (submitting || selected !== null) return; // Prevent changing vote
 
     setSubmitting(true);
     try {
@@ -28,6 +28,9 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
 
       if (response.ok) {
         setSelected(winner);
+      } else {
+        const data = await response.json();
+        console.error('Failed to submit comparison:', data.error);
       }
     } catch (error) {
       console.error('Failed to submit comparison:', error);
@@ -38,40 +41,48 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="text-sm text-gray-400">Which response is better?</p>
+      <p className="text-sm text-gray-400">
+        {selected ? 'Vote recorded!' : 'Which response is better?'}
+      </p>
       <div className="flex gap-3">
         <button
           onClick={() => handleCompare('claude')}
-          disabled={submitting}
-          className={`px-6 py-2 rounded-md font-semibold transition-colors ${
+          disabled={submitting || (selected !== null && selected !== 'claude')}
+          className={`px-6 py-2 rounded-md font-semibold transition-all ${
             selected === 'claude'
-              ? 'bg-orange-600 text-white'
+              ? 'bg-orange-600 text-white ring-2 ring-orange-400 ring-offset-2 ring-offset-gray-900'
+              : selected !== null
+              ? 'bg-gray-700 opacity-50 cursor-not-allowed text-gray-400'
               : 'bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50'
           }`}
         >
-          Claude is better
+          {selected === 'claude' ? '✓ Claude Selected' : 'Claude is better'}
         </button>
         <button
           onClick={() => handleCompare('tie')}
-          disabled={submitting}
-          className={`px-6 py-2 rounded-md font-semibold transition-colors ${
+          disabled={submitting || (selected !== null && selected !== 'tie')}
+          className={`px-6 py-2 rounded-md font-semibold transition-all ${
             selected === 'tie'
-              ? 'bg-gray-600 text-white'
+              ? 'bg-gray-600 text-white ring-2 ring-gray-400 ring-offset-2 ring-offset-gray-900'
+              : selected !== null
+              ? 'bg-gray-700 opacity-50 cursor-not-allowed text-gray-400'
               : 'bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-50'
           }`}
         >
-          Tie
+          {selected === 'tie' ? '✓ Tie Selected' : 'Tie'}
         </button>
         <button
           onClick={() => handleCompare('openai')}
-          disabled={submitting}
-          className={`px-6 py-2 rounded-md font-semibold transition-colors ${
+          disabled={submitting || (selected !== null && selected !== 'openai')}
+          className={`px-6 py-2 rounded-md font-semibold transition-all ${
             selected === 'openai'
-              ? 'bg-green-600 text-white'
+              ? 'bg-green-600 text-white ring-2 ring-green-400 ring-offset-2 ring-offset-gray-900'
+              : selected !== null
+              ? 'bg-gray-700 opacity-50 cursor-not-allowed text-gray-400'
               : 'bg-green-500 hover:bg-green-600 text-white disabled:opacity-50'
           }`}
         >
-          OpenAI is better
+          {selected === 'openai' ? '✓ OpenAI Selected' : 'OpenAI is better'}
         </button>
       </div>
     </div>
