@@ -34,17 +34,46 @@ export async function GET() {
     const claudeThumbsUp = claudeFeedback.filter(f => f.rating === 'up').length;
     const openaiThumbsUp = openaiFeedback.filter(f => f.rating === 'up').length;
     
-    // Average latencies
+    // Average latencies - Get from BOTH summaries and queries
+    const allSummaries = await db.select().from(summaries);
     const allQueries = await db.select().from(queries);
-    const claudeLatencies = allQueries.map(q => q.claudeLatencyMs);
-    const openaiLatencies = allQueries.map(q => q.openaiLatencyMs);
     
-    const avgClaudeLatency = claudeLatencies.length 
-      ? claudeLatencies.reduce((a, b) => a + b, 0) / claudeLatencies.length 
+    // Summary latencies
+    const claudeSummaryLatencies = allSummaries
+      .filter(s => s.model === 'claude')
+      .map(s => s.latencyMs);
+    const openaiSummaryLatencies = allSummaries
+      .filter(s => s.model === 'openai')
+      .map(s => s.latencyMs);
+    
+    // Query latencies
+    const claudeQueryLatencies = allQueries.map(q => q.claudeLatencyMs);
+    const openaiQueryLatencies = allQueries.map(q => q.openaiLatencyMs);
+    
+    // Combine all latencies
+    const allClaudeLatencies = [...claudeSummaryLatencies, ...claudeQueryLatencies];
+    const allOpenaiLatencies = [...openaiSummaryLatencies, ...openaiQueryLatencies];
+    
+    const avgClaudeLatency = allClaudeLatencies.length 
+      ? allClaudeLatencies.reduce((a, b) => a + b, 0) / allClaudeLatencies.length 
       : 0;
-    const avgOpenaiLatency = openaiLatencies.length 
-      ? openaiLatencies.reduce((a, b) => a + b, 0) / openaiLatencies.length 
+    const avgOpenaiLatency = allOpenaiLatencies.length 
+      ? allOpenaiLatencies.reduce((a, b) => a + b, 0) / allOpenaiLatencies.length 
       : 0;
+    
+    // Debug logging (temporary)
+    logger.debug('Latency calculation', 'EVALS', {
+      summariesCount: allSummaries.length,
+      queriesCount: allQueries.length,
+      claudeSummaryLatencies: claudeSummaryLatencies.length,
+      openaiSummaryLatencies: openaiSummaryLatencies.length,
+      claudeQueryLatencies: claudeQueryLatencies.length,
+      openaiQueryLatencies: openaiQueryLatencies.length,
+      allClaudeLatencies: allClaudeLatencies,
+      allOpenaiLatencies: allOpenaiLatencies,
+      avgClaudeLatency: Math.round(avgClaudeLatency),
+      avgOpenaiLatency: Math.round(avgOpenaiLatency)
+    });
     
     // Recent comparisons
     const recentComparisons = await db
