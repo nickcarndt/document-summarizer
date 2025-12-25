@@ -2,13 +2,22 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { documents, queries, summaries, feedback, comparisons } from '@/db/schema';
 import { sql, desc } from 'drizzle-orm';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
+    logger.info('Fetching eval stats', 'EVALS');
+    
     // Total counts
     const [docCount] = await db.select({ count: sql<number>`count(*)` }).from(documents);
     const [queryCount] = await db.select({ count: sql<number>`count(*)` }).from(queries);
     const [comparisonCount] = await db.select({ count: sql<number>`count(*)` }).from(comparisons);
+    
+    logger.debug('Counts retrieved', 'EVALS', { 
+      documents: Number(docCount.count),
+      queries: Number(queryCount.count),
+      comparisons: Number(comparisonCount.count)
+    });
     
     // Win rates
     const comparisonResults = await db.select().from(comparisons);
@@ -72,7 +81,7 @@ export async function GET() {
     });
     
   } catch (error) {
-    console.error('[EVALS] Error:', error instanceof Error ? error.message : 'Unknown error');
+    logger.error('Eval stats fetch failed', 'EVALS', error);
     return NextResponse.json({ error: 'Failed to get eval stats' }, { status: 500 });
   }
 }
