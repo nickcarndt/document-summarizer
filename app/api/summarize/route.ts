@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     });
     
     // Store summaries
-    const [claudeSummary] = await db.insert(summaries).values({
+    const [newClaudeSummary] = await db.insert(summaries).values({
       documentId,
       model: 'claude',
       content: claudeResult.content,
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       outputTokens: claudeResult.outputTokens
     }).returning();
     
-    const [openaiSummary] = await db.insert(summaries).values({
+    const [newOpenaiSummary] = await db.insert(summaries).values({
       documentId,
       model: 'openai',
       content: openaiResult.content,
@@ -111,12 +111,12 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       claude: {
-        id: claudeSummary.id,
+        id: newClaudeSummary.id,
         content: claudeResult.content,
         latencyMs: claudeResult.latencyMs
       },
       openai: {
-        id: openaiSummary.id,
+        id: newOpenaiSummary.id,
         content: openaiResult.content,
         latencyMs: openaiResult.latencyMs
       }

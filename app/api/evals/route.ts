@@ -4,6 +4,9 @@ import { documents, queries, summaries, feedback, comparisons } from '@/db/schem
 import { sql, desc, eq, gte, and } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
+// Mark route as dynamic since we use searchParams
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -81,20 +84,17 @@ export async function GET(request: NextRequest) {
     const openaiThumbsUp = openaiFeedback.filter(f => f.rating === 'up').length;
     
     // Average latencies - Get from BOTH summaries and queries (already filtered above)
-    const allSummaries = summariesFiltered;
-    const allQueries = filteredQueries;
-    
-    // Summary latencies
-    const claudeSummaryLatencies = allSummaries
+    // Use filtered data directly
+    const claudeSummaryLatencies = summariesFiltered
       .filter(s => s.model === 'claude')
       .map(s => s.latencyMs);
-    const openaiSummaryLatencies = allSummaries
+    const openaiSummaryLatencies = summariesFiltered
       .filter(s => s.model === 'openai')
       .map(s => s.latencyMs);
     
     // Query latencies
-    const claudeQueryLatencies = allQueries.map(q => q.claudeLatencyMs);
-    const openaiQueryLatencies = allQueries.map(q => q.openaiLatencyMs);
+    const claudeQueryLatencies = filteredQueries.map(q => q.claudeLatencyMs);
+    const openaiQueryLatencies = filteredQueries.map(q => q.openaiLatencyMs);
     
     // Combine all latencies
     const allClaudeLatencies = [...claudeSummaryLatencies, ...claudeQueryLatencies];
@@ -109,8 +109,8 @@ export async function GET(request: NextRequest) {
     
     // Debug logging (temporary)
     logger.debug('Latency calculation', 'EVALS', {
-      summariesCount: allSummaries.length,
-      queriesCount: allQueries.length,
+      summariesCount: summariesFiltered.length,
+      queriesCount: filteredQueries.length,
       claudeSummaryLatencies: claudeSummaryLatencies.length,
       openaiSummaryLatencies: openaiSummaryLatencies.length,
       claudeQueryLatencies: claudeQueryLatencies.length,
@@ -171,14 +171,14 @@ export async function GET(request: NextRequest) {
     );
     
     // 7a. Response Length Comparison
-    const claudeSummaryLengths = allSummaries
+    const claudeSummaryLengths = summariesFiltered
       .filter(s => s.model === 'claude')
       .map(s => s.content.length);
-    const openaiSummaryLengths = allSummaries
+    const openaiSummaryLengths = summariesFiltered
       .filter(s => s.model === 'openai')
       .map(s => s.content.length);
-    const claudeQueryLengths = allQueries.map(q => q.claudeResponse.length);
-    const openaiQueryLengths = allQueries.map(q => q.openaiResponse.length);
+    const claudeQueryLengths = filteredQueries.map(q => q.claudeResponse.length);
+    const openaiQueryLengths = filteredQueries.map(q => q.openaiResponse.length);
     
     const allClaudeLengths = [...claudeSummaryLengths, ...claudeQueryLengths];
     const allOpenaiLengths = [...openaiSummaryLengths, ...openaiQueryLengths];
@@ -264,7 +264,7 @@ export async function GET(request: NextRequest) {
     const GPT4O_MINI_OUTPUT = 0.0006;   // $0.60 per 1M output
     
     // Calculate costs from summaries (we have token data)
-    const claudeSummaryCost = allSummaries
+    const claudeSummaryCost = summariesFiltered
       .filter(s => s.model === 'claude')
       .reduce((total, s) => {
         const inputCost = (s.inputTokens || 0) * (CLAUDE_SONNET_INPUT / 1000000);
@@ -272,7 +272,7 @@ export async function GET(request: NextRequest) {
         return total + inputCost + outputCost;
       }, 0);
     
-    const openaiSummaryCost = allSummaries
+    const openaiSummaryCost = summariesFiltered
       .filter(s => s.model === 'openai')
       .reduce((total, s) => {
         const inputCost = (s.inputTokens || 0) * (GPT4O_MINI_INPUT / 1000000);
