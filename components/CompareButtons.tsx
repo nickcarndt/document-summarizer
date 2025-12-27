@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { InfoIcon } from '@/components/Tooltip';
 
 interface CompareButtonsProps {
   referenceType: 'summary' | 'query';
@@ -45,9 +46,13 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="text-sm text-gray-400">
-        {selected ? 'Vote recorded!' : 'Which response is better?'}
-      </p>
+      <div className="flex items-center gap-1">
+        <p className="text-xs text-gray-500">Which response is better?</p>
+        <InfoIcon tooltip="Thumbs = absolute quality. Comparison = relative preference. A good response can still lose if the other is better." />
+      </div>
+      {selected && (
+        <p className="text-sm text-green-400 font-medium">Vote recorded!</p>
+      )}
       <div className="flex gap-3">
         <button
           onClick={() => handleCompare('claude')}

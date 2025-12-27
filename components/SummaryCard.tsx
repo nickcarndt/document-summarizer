@@ -51,15 +51,17 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
 
   const modelName = model === 'claude' ? 'Claude' : 'OpenAI';
 
+  const getLatencyColor = (ms: number) => {
+    if (ms < 5000) return 'bg-green-600'; // Fast
+    if (ms < 10000) return 'bg-yellow-600'; // Medium
+    return 'bg-red-600'; // Slow
+  };
+
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
+    <div className="bg-gray-800 rounded-lg p-6 animate-fadeIn">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold">{modelName}</h3>
-        <span className={`px-2 py-1 rounded text-xs font-medium bg-gray-700 ${
-          model === 'claude' 
-            ? 'text-orange-400' 
-            : 'text-green-400'
-        }`}>
+        <span className={`px-2 py-1 rounded text-xs font-medium text-white ${getLatencyColor(latencyMs)}`}>
           {formatLatency(latencyMs)}
         </span>
       </div>
@@ -68,7 +70,9 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>
 
-      <div className="flex gap-2 mt-4">
+      <div className="mt-4">
+        <p className="text-xs text-gray-500 mb-2">Rate this response:</p>
+        <div className="flex gap-2">
         <button
           onClick={() => handleFeedback('up')}
           disabled={isSubmitting || feedback !== null}
@@ -101,6 +105,7 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
           </svg>
           <span>{feedback === 'down' ? 'Voted!' : 'Thumbs Down'}</span>
         </button>
+        </div>
       </div>
     </div>
   );

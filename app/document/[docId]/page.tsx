@@ -89,6 +89,11 @@ export default function DocumentPage() {
   };
 
   useEffect(() => {
+    // Store documentId in localStorage for convenience
+    if (docId) {
+      localStorage.setItem('lastDocumentId', docId);
+    }
+    
     // First fetch document info
     const fetchDocumentInfo = async () => {
       try {
@@ -96,6 +101,10 @@ export default function DocumentPage() {
         if (response.ok) {
           const data = await response.json();
           setFilename(data.filename);
+          // Also store filename in localStorage
+          if (data.filename) {
+            localStorage.setItem('lastDocumentFilename', data.filename);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch document:', error);
@@ -108,21 +117,41 @@ export default function DocumentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docId]);
 
+  const handleClearDocument = () => {
+    if (confirm('Are you sure you want to start a new document? This will clear your current session.')) {
+      localStorage.removeItem('lastDocumentId');
+      localStorage.removeItem('lastDocumentFilename');
+      router.push('/');
+    }
+  };
+
   if (loading && !summaries) {
     return (
       <div className="min-h-screen bg-gray-900">
         <Navigation />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
-            <button
-              onClick={() => router.push('/')}
-              className="text-gray-400 hover:text-white mb-4 inline-flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Upload
-            </button>
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => router.push('/')}
+                className="text-gray-400 hover:text-white inline-flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Upload
+              </button>
+              
+              <button
+                onClick={handleClearDocument}
+                className="text-sm text-gray-400 hover:text-red-400 flex items-center gap-1 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                New Document
+              </button>
+            </div>
             <h1 className="text-3xl font-bold">Document Summary</h1>
             {filename && (
               <p className="text-gray-400 mt-2">Document: {filename}</p>
@@ -146,15 +175,27 @@ export default function DocumentPage() {
       <Navigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <button
-            onClick={() => router.push('/')}
-            className="text-gray-400 hover:text-white mb-4 inline-flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Upload
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => router.push('/')}
+              className="text-gray-400 hover:text-white inline-flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Upload
+            </button>
+            
+            <button
+              onClick={handleClearDocument}
+              className="text-sm text-gray-400 hover:text-red-400 flex items-center gap-1 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              New Document
+            </button>
+          </div>
           <h1 className="text-3xl font-bold">Document Summary</h1>
           {filename && (
             <p className="text-gray-400 mt-2">Document: {filename}</p>
@@ -175,7 +216,7 @@ export default function DocumentPage() {
         )}
 
         {summaries && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fadeIn">
             <SideBySide
               claude={summaries.claude}
               openai={summaries.openai}

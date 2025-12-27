@@ -62,37 +62,39 @@ export default function QAChat({ documentId }: QAChatProps) {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="bg-gray-800 rounded-lg p-6">
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Ask a question about the document
-        </label>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Enter your question..."
-            className="flex-1 bg-gray-700 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            disabled={!question.trim() || loading}
-            className="px-6 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold rounded-md transition-colors"
-          >
-            {loading ? 'Processing...' : 'Ask'}
-          </button>
-        </div>
-        {error && (
-          <div className="mt-3 p-3 bg-red-900/50 border border-red-700 rounded-md text-red-200 text-sm">
-            {error}
+      <div className="sticky top-0 z-10 bg-gray-900 pb-4">
+        <form onSubmit={handleSubmit} className="bg-gray-800 rounded-lg p-6">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Ask a question about the document
+          </label>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Enter your question..."
+              className="flex-1 bg-gray-700 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              disabled={!question.trim() || loading}
+              className="px-6 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold rounded-md transition-colors"
+            >
+              {loading ? 'Processing...' : 'Ask'}
+            </button>
           </div>
-        )}
-      </form>
+          {error && (
+            <div className="mt-3 p-3 bg-red-900/50 border border-red-700 rounded-md text-red-200 text-sm">
+              {error}
+            </div>
+          )}
+        </form>
+      </div>
 
       <div className="space-y-8">
         {exchanges.map((exchange, index) => (
-          <div key={index} className="space-y-4">
+          <div key={index} className="space-y-4 animate-fadeIn">
             <div className="bg-gray-800 rounded-lg p-4">
               <p className="text-gray-300 font-medium">Q: {exchange.question}</p>
             </div>
