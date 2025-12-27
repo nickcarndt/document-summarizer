@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import toast from 'react-hot-toast';
 import { formatLatency } from '@/lib/utils';
+import { Tooltip } from '@/components/Tooltip';
 
 interface SummaryCardProps {
   model: 'claude' | 'openai';
@@ -16,10 +17,14 @@ interface SummaryCardProps {
 export default function SummaryCard({ model, content, latencyMs, referenceId, referenceType }: SummaryCardProps) {
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasVoted, setHasVoted] = useState(false); // Additional protection against rapid clicks
 
   const handleFeedback = async (rating: 'up' | 'down') => {
-    if (feedback !== null || isSubmitting) return; // Already voted or submitting
+    // Defense in depth: check multiple conditions
+    if (feedback !== null || isSubmitting || hasVoted) return; // Already voted or submitting
     
+    // Immediately set flags to prevent duplicate clicks
+    setHasVoted(true);
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/feedback', {
@@ -40,10 +45,14 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
         const data = await response.json();
         toast.error(data.error || 'Failed to save feedback. Please try again.');
         console.error('[FEEDBACK] Failed to submit:', data.error || 'Unknown error');
+        // Reset hasVoted on error so user can retry
+        setHasVoted(false);
       }
     } catch (error) {
       toast.error('Failed to save feedback. Please try again.');
       console.error('[FEEDBACK] Failed to submit:', error instanceof Error ? error.message : 'Unknown error');
+      // Reset hasVoted on error so user can retry
+      setHasVoted(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -52,18 +61,20 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
   const modelName = model === 'claude' ? 'Claude' : 'OpenAI';
 
   const getLatencyColor = (ms: number) => {
-    if (ms < 5000) return 'bg-green-600'; // Fast
-    if (ms < 10000) return 'bg-yellow-600'; // Medium
-    return 'bg-red-600'; // Slow
+    if (ms < 5000) return 'bg-green-600'; // Fast: <5s
+    if (ms < 15000) return 'bg-yellow-600'; // Normal: 5-15s
+    return 'bg-red-600'; // Slow: >15s
   };
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 animate-fadeIn">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold">{modelName}</h3>
-        <span className={`px-2 py-1 rounded text-xs font-medium text-white ${getLatencyColor(latencyMs)}`}>
-          {formatLatency(latencyMs)}
-        </span>
+        <Tooltip text="Response time. Green: <5s (fast), Yellow: 5-15s (normal), Red: >15s (slow)">
+          <span className={`px-2 py-1 rounded text-xs font-medium text-white cursor-help ${getLatencyColor(latencyMs)}`}>
+            {formatLatency(latencyMs)}
+          </span>
+        </Tooltip>
       </div>
       
       <div className="prose prose-invert prose-sm max-w-none mb-4 text-gray-300">
@@ -75,7 +86,7 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
         <div className="flex gap-2">
         <button
           onClick={() => handleFeedback('up')}
-          disabled={isSubmitting || feedback !== null}
+          disabled={isSubmitting || feedback !== null || hasVoted}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all ${
             feedback === 'up'
               ? 'bg-green-600 text-white'
@@ -91,7 +102,7 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
         </button>
         <button
           onClick={() => handleFeedback('down')}
-          disabled={isSubmitting || feedback !== null}
+          disabled={isSubmitting || feedback !== null || hasVoted}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all ${
             feedback === 'down'
               ? 'bg-red-600 text-white'

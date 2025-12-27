@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { comparisons } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
@@ -24,15 +25,44 @@ export async function POST(request: NextRequest) {
     
     logger.info('Saving comparison', 'COMPARE', { referenceType, winner });
     
-    const [record] = await db.insert(comparisons).values({
-      referenceType,
-      referenceId,
-      winner
-    }).returning();
+    // Check if comparison already exists for this reference
+    const existing = await db
+      .select()
+      .from(comparisons)
+      .where(
+        and(
+          eq(comparisons.referenceType, referenceType),
+          eq(comparisons.referenceId, referenceId)
+        )
+      )
+      .limit(1);
     
-    logger.info('Comparison saved', 'COMPARE', { comparisonId: record.id });
+    let record;
+    if (existing.length > 0) {
+      // Update existing comparison instead of creating duplicate
+      logger.info('Updating existing comparison', 'COMPARE', { comparisonId: existing[0].id });
+      const [updated] = await db
+        .update(comparisons)
+        .set({ 
+          winner,
+          createdAt: new Date()
+        })
+        .where(eq(comparisons.id, existing[0].id))
+        .returning();
+      record = updated;
+    } else {
+      // Insert new comparison
+      const [inserted] = await db.insert(comparisons).values({
+        referenceType,
+        referenceId,
+        winner
+      }).returning();
+      record = inserted;
+    }
     
-    return NextResponse.json({ id: record.id });
+    logger.info('Comparison saved', 'COMPARE', { comparisonId: record.id, updated: existing.length > 0 });
+    
+    return NextResponse.json({ id: record.id, updated: existing.length > 0 });
     
   } catch (error) {
     logger.error('Comparison save failed', 'COMPARE', error);

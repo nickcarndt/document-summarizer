@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
-    logger.info('Exporting eval data to CSV', 'EVALS_EXPORT');
+    logger.info('Exporting eval data to JSON', 'EVALS_EXPORT');
     
     // Fetch all data
     const allDocuments = await db.select().from(documents);
@@ -14,88 +14,58 @@ export async function GET() {
     const allFeedback = await db.select().from(feedback);
     const allComparisons = await db.select().from(comparisons);
     
-    // Build CSV content
-    const csvRows: string[] = [];
+    // Build JSON structure
+    const data = {
+      exportedAt: new Date().toISOString(),
+      documents: allDocuments.map(doc => ({
+        id: doc.id,
+        filename: doc.filename,
+        charCount: doc.charCount,
+        chunkCount: doc.chunkCount,
+        createdAt: doc.createdAt.toISOString()
+      })),
+      summaries: allSummaries.map(summary => ({
+        id: summary.id,
+        documentId: summary.documentId,
+        model: summary.model,
+        contentLength: summary.content.length,
+        latencyMs: summary.latencyMs,
+        inputTokens: summary.inputTokens,
+        outputTokens: summary.outputTokens,
+        createdAt: summary.createdAt.toISOString()
+      })),
+      queries: allQueries.map(query => ({
+        id: query.id,
+        documentId: query.documentId,
+        question: query.question,
+        claudeResponseLength: query.claudeResponse.length,
+        claudeLatencyMs: query.claudeLatencyMs,
+        openaiResponseLength: query.openaiResponse.length,
+        openaiLatencyMs: query.openaiLatencyMs,
+        createdAt: query.createdAt.toISOString()
+      })),
+      feedback: allFeedback.map(fb => ({
+        id: fb.id,
+        referenceType: fb.referenceType,
+        referenceId: fb.referenceId,
+        model: fb.model,
+        rating: fb.rating,
+        createdAt: fb.createdAt.toISOString()
+      })),
+      comparisons: allComparisons.map(comp => ({
+        id: comp.id,
+        referenceType: comp.referenceType,
+        referenceId: comp.referenceId,
+        winner: comp.winner,
+        createdAt: comp.createdAt.toISOString()
+      }))
+    };
     
-    // CSV Header
-    csvRows.push('=== DOCUMENTS ===');
-    csvRows.push('id,filename,charCount,chunkCount,createdAt');
-    allDocuments.forEach(doc => {
-      csvRows.push([
-        doc.id,
-        `"${doc.filename.replace(/"/g, '""')}"`,
-        doc.charCount,
-        doc.chunkCount || '',
-        doc.createdAt.toISOString()
-      ].join(','));
-    });
-    
-    csvRows.push('');
-    csvRows.push('=== SUMMARIES ===');
-    csvRows.push('id,documentId,model,contentLength,latencyMs,inputTokens,outputTokens,createdAt');
-    allSummaries.forEach(summary => {
-      csvRows.push([
-        summary.id,
-        summary.documentId,
-        summary.model,
-        summary.content.length,
-        summary.latencyMs,
-        summary.inputTokens || '',
-        summary.outputTokens || '',
-        summary.createdAt.toISOString()
-      ].join(','));
-    });
-    
-    csvRows.push('');
-    csvRows.push('=== QUERIES ===');
-    csvRows.push('id,documentId,question,claudeResponseLength,claudeLatencyMs,openaiResponseLength,openaiLatencyMs,createdAt');
-    allQueries.forEach(query => {
-      csvRows.push([
-        query.id,
-        query.documentId,
-        `"${query.question.replace(/"/g, '""')}"`,
-        query.claudeResponse.length,
-        query.claudeLatencyMs,
-        query.openaiResponse.length,
-        query.openaiLatencyMs,
-        query.createdAt.toISOString()
-      ].join(','));
-    });
-    
-    csvRows.push('');
-    csvRows.push('=== FEEDBACK ===');
-    csvRows.push('id,referenceType,referenceId,model,rating,createdAt');
-    allFeedback.forEach(fb => {
-      csvRows.push([
-        fb.id,
-        fb.referenceType,
-        fb.referenceId,
-        fb.model,
-        fb.rating,
-        fb.createdAt.toISOString()
-      ].join(','));
-    });
-    
-    csvRows.push('');
-    csvRows.push('=== COMPARISONS ===');
-    csvRows.push('id,referenceType,referenceId,winner,createdAt');
-    allComparisons.forEach(comp => {
-      csvRows.push([
-        comp.id,
-        comp.referenceType,
-        comp.referenceId,
-        comp.winner,
-        comp.createdAt.toISOString()
-      ].join(','));
-    });
-    
-    const csvContent = csvRows.join('\n');
-    
-    // Return CSV file
-    return new NextResponse(csvContent, {
+    // Return JSON file
+    return new NextResponse(JSON.stringify(data, null, 2), {
       headers: {
-        'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="eval-data-${new Date().toISOString().split('T')[0]}.csv"`,
+        'Content-Type': 'application/json',
+        'Content-Disposition': `attachment; filename="eval-data-${new Date().toISOString().split('T')[0]}.json"`,
       },
     });
     

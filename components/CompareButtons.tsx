@@ -12,10 +12,14 @@ interface CompareButtonsProps {
 export default function CompareButtons({ referenceType, referenceId }: CompareButtonsProps) {
   const [selected, setSelected] = useState<'claude' | 'openai' | 'tie' | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [hasVoted, setHasVoted] = useState(false); // Additional protection against rapid clicks
 
   const handleCompare = async (winner: 'claude' | 'openai' | 'tie') => {
-    if (submitting || selected !== null) return; // Prevent changing vote
+    // Defense in depth: check multiple conditions
+    if (submitting || selected !== null || hasVoted) return; // Prevent changing vote or rapid clicks
 
+    // Immediately set flags to prevent duplicate clicks
+    setHasVoted(true);
     setSubmitting(true);
     try {
       const response = await fetch('/api/compare', {
@@ -35,10 +39,14 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
         const data = await response.json();
         toast.error(data.error || 'Failed to save vote. Please try again.');
         console.error('Failed to submit comparison:', data.error);
+        // Reset hasVoted on error so user can retry
+        setHasVoted(false);
       }
     } catch (error) {
       toast.error('Failed to save vote. Please try again.');
       console.error('Failed to submit comparison:', error);
+      // Reset hasVoted on error so user can retry
+      setHasVoted(false);
     } finally {
       setSubmitting(false);
     }
@@ -56,7 +64,7 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
       <div className="flex gap-3">
         <button
           onClick={() => handleCompare('claude')}
-          disabled={submitting || (selected !== null && selected !== 'claude')}
+          disabled={submitting || hasVoted || (selected !== null && selected !== 'claude')}
           className={`px-6 py-2 rounded-md font-semibold transition-all ${
             selected === 'claude'
               ? 'bg-orange-600 text-white ring-2 ring-orange-400 ring-offset-2 ring-offset-gray-900'
@@ -69,7 +77,7 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
         </button>
         <button
           onClick={() => handleCompare('tie')}
-          disabled={submitting || (selected !== null && selected !== 'tie')}
+          disabled={submitting || hasVoted || (selected !== null && selected !== 'tie')}
           className={`px-6 py-2 rounded-md font-semibold transition-all ${
             selected === 'tie'
               ? 'bg-gray-600 text-white ring-2 ring-gray-400 ring-offset-2 ring-offset-gray-900'
@@ -82,7 +90,7 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
         </button>
         <button
           onClick={() => handleCompare('openai')}
-          disabled={submitting || (selected !== null && selected !== 'openai')}
+          disabled={submitting || hasVoted || (selected !== null && selected !== 'openai')}
           className={`px-6 py-2 rounded-md font-semibold transition-all ${
             selected === 'openai'
               ? 'bg-green-600 text-white ring-2 ring-green-400 ring-offset-2 ring-offset-gray-900'

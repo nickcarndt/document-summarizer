@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { feedback } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
@@ -29,16 +30,46 @@ export async function POST(request: NextRequest) {
     
     logger.info('Saving feedback', 'FEEDBACK', { referenceType, model, rating });
     
-    const [record] = await db.insert(feedback).values({
-      referenceType,
-      referenceId,
-      model,
-      rating
-    }).returning();
+    // Check if feedback already exists for this reference + model combination
+    const existing = await db
+      .select()
+      .from(feedback)
+      .where(
+        and(
+          eq(feedback.referenceType, referenceType),
+          eq(feedback.referenceId, referenceId),
+          eq(feedback.model, model)
+        )
+      )
+      .limit(1);
     
-    logger.info('Feedback saved', 'FEEDBACK', { feedbackId: record.id });
+    let record;
+    if (existing.length > 0) {
+      // Update existing feedback instead of creating duplicate
+      logger.info('Updating existing feedback', 'FEEDBACK', { feedbackId: existing[0].id });
+      const [updated] = await db
+        .update(feedback)
+        .set({ 
+          rating,
+          createdAt: new Date()
+        })
+        .where(eq(feedback.id, existing[0].id))
+        .returning();
+      record = updated;
+    } else {
+      // Insert new feedback
+      const [inserted] = await db.insert(feedback).values({
+        referenceType,
+        referenceId,
+        model,
+        rating
+      }).returning();
+      record = inserted;
+    }
     
-    return NextResponse.json({ id: record.id });
+    logger.info('Feedback saved', 'FEEDBACK', { feedbackId: record.id, updated: existing.length > 0 });
+    
+    return NextResponse.json({ id: record.id, updated: existing.length > 0 });
     
   } catch (error) {
     logger.error('Feedback save failed', 'FEEDBACK', error);

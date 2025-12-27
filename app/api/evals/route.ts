@@ -1,17 +1,57 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { documents, queries, summaries, feedback, comparisons } from '@/db/schema';
-import { sql, desc } from 'drizzle-orm';
+import { sql, desc, eq, gte, and } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    logger.info('Fetching eval stats', 'EVALS');
+    const searchParams = request.nextUrl.searchParams;
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
     
-    // Total counts
-    const [docCount] = await db.select({ count: sql<number>`count(*)` }).from(documents);
-    const [queryCount] = await db.select({ count: sql<number>`count(*)` }).from(queries);
-    const [comparisonCount] = await db.select({ count: sql<number>`count(*)` }).from(comparisons);
+    // Parse date range if provided
+    let dateFilter: { start?: Date; end?: Date } = {};
+    if (startDate) {
+      dateFilter.start = new Date(startDate);
+    }
+    if (endDate) {
+      dateFilter.end = new Date(endDate);
+      // Set to end of day
+      dateFilter.end.setHours(23, 59, 59, 999);
+    }
+    
+    logger.info('Fetching eval stats', 'EVALS', { dateFilter });
+    
+    // Get all data first
+    const allDocs = await db.select().from(documents);
+    const allQueries = await db.select().from(queries);
+    const allComparisons = await db.select().from(comparisons);
+    const allFeedback = await db.select().from(feedback);
+    const allSummaries = await db.select().from(summaries);
+    
+    // Helper function to filter by date
+    const filterByDate = <T extends { createdAt: Date | string }>(items: T[]): T[] => {
+      if (!dateFilter.start && !dateFilter.end) return items;
+      return items.filter(item => {
+        const itemDate = new Date(item.createdAt);
+        if (dateFilter.start && itemDate < dateFilter.start) return false;
+        if (dateFilter.end && itemDate > dateFilter.end) return false;
+        return true;
+      });
+    };
+    
+    // Apply date filter if provided
+    const filteredDocs = filterByDate(allDocs);
+    const filteredQueries = filterByDate(allQueries);
+    const filteredComparisons = filterByDate(allComparisons);
+    const feedbackResults = filterByDate(allFeedback);
+    const summariesFiltered = filterByDate(allSummaries);
+    
+    // Total counts (from filtered data)
+    const docCount = { count: BigInt(filteredDocs.length) };
+    const queryCount = { count: BigInt(filteredQueries.length) };
+    const comparisonCount = { count: BigInt(filteredComparisons.length) };
     
     logger.debug('Counts retrieved', 'EVALS', { 
       documents: Number(docCount.count),
@@ -19,24 +59,30 @@ export async function GET() {
       comparisons: Number(comparisonCount.count)
     });
     
-    // Win rates
-    const comparisonResults = await db.select().from(comparisons);
+    // Win rates (use filtered comparisons)
+    const comparisonResults = filteredComparisons;
     const claudeWins = comparisonResults.filter(c => c.winner === 'claude').length;
     const openaiWins = comparisonResults.filter(c => c.winner === 'openai').length;
     const ties = comparisonResults.filter(c => c.winner === 'tie').length;
     const totalComparisons = comparisonResults.length || 1; // Avoid division by zero
     
-    // Thumbs up rates
-    const feedbackResults = await db.select().from(feedback);
+    // Win counts for display
+    const winCounts = {
+      claude: claudeWins,
+      openai: openaiWins,
+      tie: ties
+    };
+    
+    // Thumbs up rates (already filtered above)
     const claudeFeedback = feedbackResults.filter(f => f.model === 'claude');
     const openaiFeedback = feedbackResults.filter(f => f.model === 'openai');
     
     const claudeThumbsUp = claudeFeedback.filter(f => f.rating === 'up').length;
     const openaiThumbsUp = openaiFeedback.filter(f => f.rating === 'up').length;
     
-    // Average latencies - Get from BOTH summaries and queries
-    const allSummaries = await db.select().from(summaries);
-    const allQueries = await db.select().from(queries);
+    // Average latencies - Get from BOTH summaries and queries (already filtered above)
+    const allSummaries = summariesFiltered;
+    const allQueries = filteredQueries;
     
     // Summary latencies
     const claudeSummaryLatencies = allSummaries
@@ -75,17 +121,54 @@ export async function GET() {
       avgOpenaiLatency: Math.round(avgOpenaiLatency)
     });
     
-    // Recent comparisons
-    const recentComparisons = await db
-      .select({
-        id: comparisons.id,
-        referenceType: comparisons.referenceType,
-        winner: comparisons.winner,
-        createdAt: comparisons.createdAt
+    // Recent comparisons with question preview for queries (already filtered by date above)
+    const recentComparisonsRaw = comparisonResults
+      .map(c => ({
+        id: c.id,
+        referenceType: c.referenceType,
+        referenceId: c.referenceId,
+        winner: c.winner,
+        createdAt: c.createdAt
+      }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10);
+    
+    // Fetch question text for query comparisons
+    const recentComparisons = await Promise.all(
+      recentComparisonsRaw.map(async (comp) => {
+        if (comp.referenceType === 'query') {
+          const [query] = await db
+            .select({ question: queries.question })
+            .from(queries)
+            .where(eq(queries.id, comp.referenceId))
+            .limit(1);
+          return {
+            ...comp,
+            questionPreview: query?.question ? query.question.substring(0, 50) + (query.question.length > 50 ? '...' : '') : null
+          };
+        }
+        // For summaries, get document filename
+        if (comp.referenceType === 'summary') {
+          const [summary] = await db
+            .select({ documentId: summaries.documentId })
+            .from(summaries)
+            .where(eq(summaries.id, comp.referenceId))
+            .limit(1);
+          if (summary) {
+            const [doc] = await db
+              .select({ filename: documents.filename })
+              .from(documents)
+              .where(eq(documents.id, summary.documentId))
+              .limit(1);
+            return {
+              ...comp,
+              questionPreview: doc?.filename || null
+            };
+          }
+        }
+        return { ...comp, questionPreview: null };
       })
-      .from(comparisons)
-      .orderBy(desc(comparisons.createdAt))
-      .limit(10);
+    );
     
     // 7a. Response Length Comparison
     const claudeSummaryLengths = allSummaries
@@ -149,7 +232,7 @@ export async function GET() {
       ? Math.round((openaiAgreementCount / openaiWinCount) * 100)
       : 0;
     
-    // 7c. Win Rate by Type (Summary vs Q&A)
+    // 7c. Win Rate by Type (Summary vs Q&A) - already filtered by date above
     const summaryComparisons = comparisonResults.filter(c => c.referenceType === 'summary');
     const queryComparisons = comparisonResults.filter(c => c.referenceType === 'query');
     
@@ -173,6 +256,35 @@ export async function GET() {
       return arr[Math.max(0, index)];
     };
     
+    // 10a. Cost Tracking
+    // Pricing (per 1M tokens)
+    const CLAUDE_SONNET_INPUT = 0.003;  // $3 per 1M input tokens
+    const CLAUDE_SONNET_OUTPUT = 0.015; // $15 per 1M output tokens
+    const GPT4O_MINI_INPUT = 0.00015;   // $0.15 per 1M input
+    const GPT4O_MINI_OUTPUT = 0.0006;   // $0.60 per 1M output
+    
+    // Calculate costs from summaries (we have token data)
+    const claudeSummaryCost = allSummaries
+      .filter(s => s.model === 'claude')
+      .reduce((total, s) => {
+        const inputCost = (s.inputTokens || 0) * (CLAUDE_SONNET_INPUT / 1000000);
+        const outputCost = (s.outputTokens || 0) * (CLAUDE_SONNET_OUTPUT / 1000000);
+        return total + inputCost + outputCost;
+      }, 0);
+    
+    const openaiSummaryCost = allSummaries
+      .filter(s => s.model === 'openai')
+      .reduce((total, s) => {
+        const inputCost = (s.inputTokens || 0) * (GPT4O_MINI_INPUT / 1000000);
+        const outputCost = (s.outputTokens || 0) * (GPT4O_MINI_OUTPUT / 1000000);
+        return total + inputCost + outputCost;
+      }, 0);
+    
+    // Note: Queries don't have token data, so we can't calculate their cost accurately
+    // We'll only show summary costs for now
+    const totalClaudeCost = claudeSummaryCost;
+    const totalOpenaiCost = openaiSummaryCost;
+    
     const response = NextResponse.json({
       totalDocuments: Number(docCount.count),
       totalQueries: Number(queryCount.count),
@@ -181,6 +293,7 @@ export async function GET() {
       claudeWinRate: Math.round((claudeWins / totalComparisons) * 100),
       openaiWinRate: Math.round((openaiWins / totalComparisons) * 100),
       tieRate: Math.round((ties / totalComparisons) * 100),
+      winCounts,
       
       claudeThumbsUpRate: claudeFeedback.length 
         ? Math.round((claudeThumbsUp / claudeFeedback.length) * 100) 
@@ -201,12 +314,14 @@ export async function GET() {
         summaries: {
           claude: Math.round((summaryClaudeWins / summaryTotal) * 100),
           openai: Math.round((summaryOpenaiWins / summaryTotal) * 100),
-          tie: Math.round((summaryTies / summaryTotal) * 100)
+          tie: Math.round((summaryTies / summaryTotal) * 100),
+          total: summaryComparisons.length
         },
         queries: {
           claude: Math.round((queryClaudeWins / queryTotal) * 100),
           openai: Math.round((queryOpenaiWins / queryTotal) * 100),
-          tie: Math.round((queryTies / queryTotal) * 100)
+          tie: Math.round((queryTies / queryTotal) * 100),
+          total: queryComparisons.length
         }
       },
       latencyDistribution: {
@@ -222,6 +337,11 @@ export async function GET() {
           median: getPercentile(sortedOpenaiLatencies, 50),
           p95: getPercentile(sortedOpenaiLatencies, 95)
         }
+      },
+      
+      costs: {
+        claude: Math.round(totalClaudeCost * 100) / 100, // Round to 2 decimal places
+        openai: Math.round(totalOpenaiCost * 100) / 100
       },
       
       recentComparisons

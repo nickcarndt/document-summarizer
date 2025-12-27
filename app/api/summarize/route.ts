@@ -30,6 +30,32 @@ export async function POST(request: NextRequest) {
     
     logger.info('Starting summarization', 'SUMMARIZE', { documentId });
     
+    // Check if summaries already exist
+    const existingSummaries = await db
+      .select()
+      .from(summaries)
+      .where(eq(summaries.documentId, documentId));
+    
+    const claudeSummary = existingSummaries.find(s => s.model === 'claude');
+    const openaiSummary = existingSummaries.find(s => s.model === 'openai');
+    
+    if (claudeSummary && openaiSummary) {
+      // Summaries already exist - return them without regenerating
+      logger.info('Summaries already exist, returning existing', 'SUMMARIZE', { documentId });
+      return NextResponse.json({
+        claude: {
+          id: claudeSummary.id,
+          content: claudeSummary.content,
+          latencyMs: claudeSummary.latencyMs
+        },
+        openai: {
+          id: openaiSummary.id,
+          content: openaiSummary.content,
+          latencyMs: openaiSummary.latencyMs
+        }
+      });
+    }
+    
     // Get document
     const [document] = await db.select().from(documents).where(eq(documents.id, documentId));
     

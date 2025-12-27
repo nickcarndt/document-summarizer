@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useRef, useEffect } from 'react';
 
 interface TooltipProps {
   text: string;
@@ -8,12 +8,58 @@ interface TooltipProps {
 }
 
 export function Tooltip({ text, children }: TooltipProps) {
+  const [position, setPosition] = useState<'top' | 'bottom' | 'left' | 'right'>('top');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkPosition = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      
+      // If too close to top, show below
+      if (rect.top < 60) {
+        setPosition('bottom');
+      }
+      // If too close to right edge, show on left
+      else if (rect.right > window.innerWidth - 150) {
+        setPosition('left');
+      }
+      // If too close to left edge, show on right
+      else if (rect.left < 150) {
+        setPosition('right');
+      }
+      else {
+        setPosition('top');
+      }
+    };
+    
+    checkPosition();
+    window.addEventListener('resize', checkPosition);
+    return () => window.removeEventListener('resize', checkPosition);
+  }, []);
+
+  const positionClasses = {
+    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
+    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
+    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
+    right: 'left-full top-1/2 -translate-y-1/2 ml-2'
+  };
+
+  const arrowClasses = {
+    top: 'absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700',
+    bottom: 'absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-700',
+    left: 'absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-700',
+    right: 'absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-700'
+  };
+
   return (
-    <div className="relative group inline-block">
+    <div ref={containerRef} className="relative group inline-block">
       {children}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+      <div 
+        className={`absolute ${positionClasses[position]} px-3 py-2 bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 max-w-xs whitespace-normal`}
+      >
         {text}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700"></div>
+        <div className={arrowClasses[position]}></div>
       </div>
     </div>
   );

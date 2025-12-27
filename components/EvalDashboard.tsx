@@ -10,6 +10,11 @@ interface EvalStats {
   claudeWinRate: number;
   openaiWinRate: number;
   tieRate: number;
+  winCounts?: {
+    claude: number;
+    openai: number;
+    tie: number;
+  };
   claudeThumbsUpRate: number;
   openaiThumbsUpRate: number;
   claudeAvgLatencyMs: number;
@@ -19,18 +24,23 @@ interface EvalStats {
   claudeAgreementRate?: number;
   openaiAgreementRate?: number;
   winRateByType?: {
-    summaries: { claude: number; openai: number; tie: number };
-    queries: { claude: number; openai: number; tie: number };
+    summaries: { claude: number; openai: number; tie: number; total: number };
+    queries: { claude: number; openai: number; tie: number; total: number };
   };
   latencyDistribution?: {
     claude: { min: number; max: number; median: number; p95: number };
     openai: { min: number; max: number; median: number; p95: number };
+  };
+  costs?: {
+    claude: number;
+    openai: number;
   };
   recentComparisons: Array<{
     id: string;
     referenceType: string;
     winner: string;
     createdAt: string;
+    questionPreview?: string | null;
   }>;
 }
 
@@ -38,23 +48,55 @@ export default function EvalDashboard() {
   const [stats, setStats] = useState<EvalStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<'all' | '7days' | '30days' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+
+  const getDateRangeParams = () => {
+    if (dateRange === 'all') return '';
+    
+    const end = new Date();
+    let start: Date;
+    
+    if (dateRange === '7days') {
+      start = new Date();
+      start.setDate(start.getDate() - 7);
+    } else if (dateRange === '30days') {
+      start = new Date();
+      start.setDate(start.getDate() - 30);
+    } else if (dateRange === 'custom') {
+      if (!customStartDate || !customEndDate) return '';
+      return `?startDate=${customStartDate}&endDate=${customEndDate}`;
+    } else {
+      return '';
+    }
+    
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+    return `?startDate=${startStr}&endDate=${endStr}`;
+  };
 
   useEffect(() => {
-    fetchStats();
+    if (dateRange !== 'custom') {
+      fetchStats();
+    }
     
     // Refetch on window focus (Option A)
     const handleFocus = () => {
-      fetchStats();
+      if (dateRange !== 'custom') {
+        fetchStats();
+      }
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  }, [dateRange]);
 
   const fetchStats = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/evals');
+      const dateParams = getDateRangeParams();
+      const response = await fetch(`/api/evals${dateParams}`);
       if (!response.ok) {
         let errorMessage = 'Failed to fetch stats';
         try {
@@ -109,7 +151,7 @@ export default function EvalDashboard() {
     );
   }
 
-  const handleExportCSV = async () => {
+  const handleExportJSON = async () => {
     try {
       const response = await fetch('/api/evals/export');
       if (!response.ok) {
@@ -119,23 +161,166 @@ export default function EvalDashboard() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `eval-data-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `eval-data-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to export CSV:', error);
+      console.error('Failed to export JSON:', error);
       alert('Failed to export data. Please try again.');
+    }
+  };
+
+  // Generate insights dynamically
+  const generateInsights = (): string[] => {
+    if (!stats) return [];
+    
+    const insights: string[] = [];
+    
+    // Win rate insight
+    if (stats.totalComparisons > 0) {
+      const preferredModel = stats.claudeWinRate > stats.openaiWinRate ? 'Claude' : 'OpenAI';
+      const preferredRate = Math.max(stats.claudeWinRate, stats.openaiWinRate);
+      if (preferredRate >= 55) {
+        insights.push(`${preferredModel} preferred in <strong>${preferredRate}%</strong> of head-to-head comparisons`);
+      }
+    }
+    
+    // Response length insight
+    if (stats.claudeAvgLength && stats.openaiAvgLength && stats.claudeAvgLength > 0 && stats.openaiAvgLength > 0) {
+      const lengthDiff = ((stats.claudeAvgLength - stats.openaiAvgLength) / stats.openaiAvgLength) * 100;
+      const longerModel = lengthDiff > 0 ? 'Claude' : 'OpenAI';
+      const diffPercent = Math.abs(Math.round(lengthDiff));
+      if (diffPercent >= 10) {
+        insights.push(`${longerModel} responses average <strong>${diffPercent}% longer</strong> (${stats.claudeAvgLength.toLocaleString()} vs ${stats.openaiAvgLength.toLocaleString()} chars)`);
+      }
+    }
+    
+    // Latency insight
+    if (stats.claudeAvgLatencyMs > 0 && stats.openaiAvgLatencyMs > 0) {
+      const latencyRatio = stats.claudeAvgLatencyMs / stats.openaiAvgLatencyMs;
+      const fasterModel = latencyRatio > 1 ? 'OpenAI' : 'Claude';
+      const speedMultiplier = latencyRatio > 1 ? latencyRatio : 1 / latencyRatio;
+      if (speedMultiplier >= 1.3) {
+        insights.push(`${fasterModel} is <strong>${speedMultiplier.toFixed(1)}x faster</strong> (${(stats.openaiAvgLatencyMs / 1000).toFixed(1)}s vs ${(stats.claudeAvgLatencyMs / 1000).toFixed(1)}s average)`);
+      }
+    }
+    
+    // Thumbs up rate insight
+    if (stats.claudeThumbsUpRate > 0 && stats.openaiThumbsUpRate > 0) {
+      const rateDiff = Math.abs(stats.claudeThumbsUpRate - stats.openaiThumbsUpRate);
+      if (rateDiff < 10) {
+        insights.push(`Thumbs up rates are similar (${stats.claudeThumbsUpRate}% vs ${stats.openaiThumbsUpRate}%), suggesting both produce quality outputs`);
+      }
+    }
+    
+    return insights;
+  };
+
+  const insights = generateInsights();
+
+  const handleDateRangeChange = (range: 'all' | '7days' | '30days' | 'custom') => {
+    setDateRange(range);
+  };
+
+  const handleCustomDateApply = () => {
+    if (customStartDate && customEndDate) {
+      fetchStats();
     }
   };
 
   return (
     <div className="space-y-6">
+      {/* Date Range Filter */}
+      <div className="bg-gray-800 rounded-lg p-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="text-gray-400 text-sm font-medium">Filter by Date:</span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleDateRangeChange('all')}
+              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                dateRange === 'all'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              All Time
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('7days')}
+              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                dateRange === '7days'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Last 7 Days
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('30days')}
+              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                dateRange === '30days'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Last 30 Days
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('custom')}
+              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                dateRange === 'custom'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Custom Range
+            </button>
+          </div>
+          {dateRange === 'custom' && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="bg-gray-700 text-white rounded-md px-3 py-1.5 text-sm border border-gray-600"
+              />
+              <span className="text-gray-400">to</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="bg-gray-700 text-white rounded-md px-3 py-1.5 text-sm border border-gray-600"
+              />
+              <button
+                onClick={handleCustomDateApply}
+                disabled={!customStartDate || !customEndDate}
+                className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-md text-sm transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Key Insights */}
+      {insights.length > 0 && (
+        <div className="bg-gray-800 border-l-4 border-orange-500 p-4 rounded-lg">
+          <h3 className="text-white font-semibold mb-2">Key Insights</h3>
+          <ul className="text-gray-300 text-sm space-y-1">
+            {insights.map((insight, index) => (
+              <li key={index} dangerouslySetInnerHTML={{ __html: `• ${insight}` }} />
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Refresh and Export Buttons */}
       <div className="flex justify-end gap-2">
         <button
-          onClick={handleExportCSV}
+          onClick={handleExportJSON}
           className="text-sm text-gray-400 hover:text-white flex items-center gap-1 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
         >
           <svg 
@@ -146,7 +331,7 @@ export default function EvalDashboard() {
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          Export Data (CSV)
+          Export Data (JSON)
         </button>
         <button
           onClick={() => fetchStats()}
@@ -200,7 +385,9 @@ export default function EvalDashboard() {
           <div>
             <div className="flex justify-between mb-2">
               <span className="text-orange-400">Claude</span>
-              <span className="text-gray-300">{stats.claudeWinRate}%</span>
+              <span className="text-gray-300">
+                {stats.claudeWinRate}% {stats.winCounts && `(${stats.winCounts.claude} wins)`}
+              </span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-4">
               <div
@@ -212,7 +399,9 @@ export default function EvalDashboard() {
           <div>
             <div className="flex justify-between mb-2">
               <span className="text-green-400">OpenAI</span>
-              <span className="text-gray-300">{stats.openaiWinRate}%</span>
+              <span className="text-gray-300">
+                {stats.openaiWinRate}% {stats.winCounts && `(${stats.winCounts.openai} wins)`}
+              </span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-4">
               <div
@@ -224,7 +413,9 @@ export default function EvalDashboard() {
           <div>
             <div className="flex justify-between mb-2">
               <span className="text-gray-400">Tie</span>
-              <span className="text-gray-300">{stats.tieRate}%</span>
+              <span className="text-gray-300">
+                {stats.tieRate}% {stats.winCounts && `(${stats.winCounts.tie} ties)`}
+              </span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-4">
               <div
@@ -253,6 +444,30 @@ export default function EvalDashboard() {
           <p className="text-3xl font-bold text-green-400">{stats.openaiThumbsUpRate}%</p>
         </div>
       </div>
+
+      {/* Cost Tracking */}
+      {stats.costs && (
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">
+            Total Cost Incurred
+            <InfoIcon tooltip="Cost calculated from summary generation only (queries don't have token data). Based on Claude Sonnet 4 and GPT-4o-mini pricing." />
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <p className="text-gray-400 text-sm mb-1">Claude</p>
+              <p className="text-3xl font-bold text-orange-400">
+                ${stats.costs.claude.toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm mb-1">OpenAI</p>
+              <p className="text-3xl font-bold text-green-400">
+                ${stats.costs.openai.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Average Latencies */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -312,7 +527,7 @@ export default function EvalDashboard() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">
               Claude Agreement Rate
-              <InfoIcon tooltip="Percentage of times Claude won a comparison AND received a thumbs up. Shows consistency in user preferences." />
+              <InfoIcon tooltip="How often the comparison winner also received a thumbs up. Higher = more consistent preferences. If Claude wins a comparison AND gets thumbs up, that's 'agreement'. If Claude wins but gets thumbs down, that's 'disagreement' (might indicate user error or complex preference)." />
             </h3>
             <p className="text-3xl font-bold text-orange-400">
               {stats.claudeAgreementRate}%
@@ -321,7 +536,7 @@ export default function EvalDashboard() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">
               OpenAI Agreement Rate
-              <InfoIcon tooltip="Percentage of times OpenAI won a comparison AND received a thumbs up. Shows consistency in user preferences." />
+              <InfoIcon tooltip="How often the comparison winner also received a thumbs up. Higher = more consistent preferences. If OpenAI wins a comparison AND gets thumbs up, that's 'agreement'. If OpenAI wins but gets thumbs down, that's 'disagreement' (might indicate user error or complex preference)." />
             </h3>
             <p className="text-3xl font-bold text-green-400">
               {stats.openaiAgreementRate}%
@@ -360,18 +575,27 @@ export default function EvalDashboard() {
                     {stats.winRateByType.summaries.tie}%
                   </td>
                 </tr>
-                <tr>
-                  <td className="py-2 px-4 font-medium">Q&A</td>
-                  <td className="py-2 px-4 text-right text-orange-400">
-                    {stats.winRateByType.queries.claude}%
-                  </td>
-                  <td className="py-2 px-4 text-right text-green-400">
-                    {stats.winRateByType.queries.openai}%
-                  </td>
-                  <td className="py-2 px-4 text-right text-gray-400">
-                    {stats.winRateByType.queries.tie}%
-                  </td>
-                </tr>
+                {stats.winRateByType.queries.total >= 3 ? (
+                  <tr>
+                    <td className="py-2 px-4 font-medium">Q&A</td>
+                    <td className="py-2 px-4 text-right text-orange-400">
+                      {stats.winRateByType.queries.claude}%
+                    </td>
+                    <td className="py-2 px-4 text-right text-green-400">
+                      {stats.winRateByType.queries.openai}%
+                    </td>
+                    <td className="py-2 px-4 text-right text-gray-400">
+                      {stats.winRateByType.queries.tie}%
+                    </td>
+                  </tr>
+                ) : (
+                  <tr>
+                    <td className="py-2 px-4 font-medium">Q&A</td>
+                    <td colSpan={3} className="py-2 px-4 text-center text-gray-500 text-sm">
+                      Insufficient data (need 3+ comparisons, currently {stats.winRateByType.queries.total})
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -479,6 +703,7 @@ export default function EvalDashboard() {
                 <tr className="border-b border-gray-700">
                   <th className="text-left py-2 px-4 text-gray-400">Type</th>
                   <th className="text-left py-2 px-4 text-gray-400">Winner</th>
+                  <th className="text-left py-2 px-4 text-gray-400">Preview</th>
                   <th className="text-left py-2 px-4 text-gray-400">Date</th>
                 </tr>
               </thead>
@@ -498,6 +723,9 @@ export default function EvalDashboard() {
                       >
                         {comp.winner === 'tie' ? 'Tie' : comp.winner.toUpperCase()}
                       </span>
+                    </td>
+                    <td className="py-2 px-4 text-gray-400 text-xs max-w-xs truncate">
+                      {comp.questionPreview || '-'}
                     </td>
                     <td className="py-2 px-4 text-gray-400">
                       {new Date(comp.createdAt).toLocaleString()}
