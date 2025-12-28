@@ -469,7 +469,7 @@ export default function EvalDashboard() {
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4">
             Total Cost Incurred
-            <InfoIcon tooltip="Cost calculated from summary generation only (queries don't have token data). Based on Claude Sonnet 4 and GPT-4o-mini pricing." />
+            <InfoIcon tooltip="Cost calculated from summary generation only (queries don't have token data). Based on Claude Haiku and GPT-4o-mini pricing." />
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>

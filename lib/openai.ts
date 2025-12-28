@@ -21,6 +21,8 @@ export async function generateWithOpenAI(
   const response = await client.chat.completions.create({
     model: 'gpt-4o-mini',
     max_tokens: maxTokens,
+    temperature: 0,
+    top_p: 1,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt }
@@ -36,4 +38,3 @@ export async function generateWithOpenAI(
     outputTokens: response.usage?.completion_tokens || 0
   };
 }
-

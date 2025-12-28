@@ -6,7 +6,7 @@ Compare Claude and OpenAI responses side-by-side with a built-in evaluation fram
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://typescriptlang.org)
-[![Claude](https://img.shields.io/badge/Claude-Sonnet-orange)](https://anthropic.com)
+[![Claude](https://img.shields.io/badge/Claude-Haiku-orange)](https://anthropic.com)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-green)](https://openai.com)
 
 ## Highlights
@@ -80,7 +80,7 @@ flowchart TB
     end
 
     subgraph External["External Services"]
-        Claude["Claude API<br/>(claude-sonnet-4-20250514)"]
+        Claude["Claude API<br/>(claude-haiku-4-5-20251001)"]
         OpenAI["OpenAI API<br/>(gpt-4o-mini + embeddings)"]
         Neon[("Neon Postgres<br/>+ pgvector")]
     end
@@ -109,7 +109,7 @@ flowchart TB
 | Styling | Tailwind CSS |
 | Database | Neon Postgres + Drizzle ORM |
 | Embeddings | OpenAI text-embedding-3-small |
-| LLMs | Claude Sonnet, GPT-4o-mini |
+| LLMs | Claude Haiku, GPT-4o-mini |
 | PDF Parsing | pdf-parse |
 | Deployment | Vercel |
 

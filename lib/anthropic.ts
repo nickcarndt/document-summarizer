@@ -19,8 +19,10 @@ export async function generateWithClaude(
   const start = Date.now();
   
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: maxTokens,
+    temperature: 0,
+    top_p: 1,
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }]
   });
@@ -34,4 +36,3 @@ export async function generateWithClaude(
     outputTokens: response.usage.output_tokens
   };
 }
-
