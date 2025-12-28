@@ -34,6 +34,10 @@ export async function GET(request: NextRequest) {
     
     const allQueries = await db.select().from(queries);
     console.log('[EVALS] Queries count:', allQueries.length);
+    console.log('[EVALS] Query dates:', allQueries.map(q => ({
+      id: q.id.substring(0, 8),
+      date: new Date(q.createdAt).toISOString()
+    })));
     
     const allComparisons = await db.select().from(comparisons);
     console.log('[EVALS] Comparisons count:', allComparisons.length);
@@ -42,6 +46,11 @@ export async function GET(request: NextRequest) {
       openai: allComparisons.filter(c => c.winner === 'openai').length,
       tie: allComparisons.filter(c => c.winner === 'tie').length,
     });
+    console.log('[EVALS] Comparison dates:', allComparisons.map(c => ({
+      id: c.id.substring(0, 8),
+      winner: c.winner,
+      date: new Date(c.createdAt).toISOString()
+    })));
     
     const allFeedback = await db.select().from(feedback);
     const allSummaries = await db.select().from(summaries);
