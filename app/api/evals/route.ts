@@ -60,8 +60,16 @@ export async function GET(request: NextRequest) {
     
     // Helper function to filter by date
     const filterByDate = <T extends { createdAt: Date | string }>(items: T[]): T[] => {
-      if (!dateFilter.start && !dateFilter.end) return items;
-      return items.filter(item => {
+      if (!dateFilter.start && !dateFilter.end) {
+        console.log('[EVALS] No date filter - returning all items');
+        return items;
+      }
+      console.log('[EVALS] Applying date filter:', {
+        start: dateFilter.start?.toISOString(),
+        end: dateFilter.end?.toISOString(),
+        itemCount: items.length
+      });
+      const filtered = items.filter(item => {
         const itemDate = new Date(item.createdAt);
         // Include items on or after start date
         if (dateFilter.start && itemDate < dateFilter.start) {
@@ -81,6 +89,12 @@ export async function GET(request: NextRequest) {
         }
         return true;
       });
+      console.log('[EVALS] Date filter result:', {
+        original: items.length,
+        filtered: filtered.length,
+        removed: items.length - filtered.length
+      });
+      return filtered;
     };
     
     // Apply date filter if provided
