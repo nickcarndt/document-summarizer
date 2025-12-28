@@ -26,24 +26,26 @@ Compare Claude and OpenAI responses side-by-side with a built-in evaluation fram
 
 <table>
   <tr>
-    <td align="center" width="50%">
+    <td align="center" width="50%" valign="top">
       <img src="screenshots/qa-view.png" width="420" alt="Q&A with RAG" />
       <br/>
       <sub><b>Q&A</b> — RAG-based answers from both models</sub>
     </td>
-    <td align="center" width="50%">
+    <td align="center" width="50%" rowspan="3" valign="top">
       <img src="screenshots/eval-dashboard.png" width="420" alt="Evaluation dashboard" />
       <br/>
       <sub><b>Eval Dashboard</b> — Win rates, latency, cost tracking</sub>
     </td>
   </tr>
   <tr>
-    <td align="center" width="50%">
+    <td align="center" width="50%" valign="top">
       <img src="screenshots/voting.png" width="420" alt="Voting interface" />
       <br/>
       <sub><b>Voting</b> — Thumbs up/down + head-to-head comparison</sub>
     </td>
-    <td align="center" width="50%">
+  </tr>
+  <tr>
+    <td align="center" width="50%" valign="top">
       <img src="screenshots/key-insights.png" width="420" alt="Key insights" />
       <br/>
       <sub><b>Insights</b> — Auto-generated performance analysis</sub>
