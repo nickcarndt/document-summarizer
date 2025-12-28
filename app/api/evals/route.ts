@@ -54,8 +54,22 @@ export async function GET(request: NextRequest) {
       if (!dateFilter.start && !dateFilter.end) return items;
       return items.filter(item => {
         const itemDate = new Date(item.createdAt);
-        if (dateFilter.start && itemDate < dateFilter.start) return false;
-        if (dateFilter.end && itemDate > dateFilter.end) return false;
+        // Include items on or after start date
+        if (dateFilter.start && itemDate < dateFilter.start) {
+          console.log('[EVALS] Filtering out item before start date:', {
+            itemDate: itemDate.toISOString(),
+            startDate: dateFilter.start.toISOString()
+          });
+          return false;
+        }
+        // Include items on or before end date
+        if (dateFilter.end && itemDate > dateFilter.end) {
+          console.log('[EVALS] Filtering out item after end date:', {
+            itemDate: itemDate.toISOString(),
+            endDate: dateFilter.end.toISOString()
+          });
+          return false;
+        }
         return true;
       });
     };
@@ -69,17 +83,19 @@ export async function GET(request: NextRequest) {
       endDate: dateFilter.end?.toISOString()
     });
     
-    // Temporarily use all data to debug
-    const filteredDocs = allDocs; // filterByDate(allDocs);
-    const filteredQueries = allQueries; // filterByDate(allQueries);
-    const filteredComparisons = allComparisons; // filterByDate(allComparisons);
-    const feedbackResults = allFeedback; // filterByDate(allFeedback);
-    const summariesFiltered = allSummaries; // filterByDate(allSummaries);
+    // Apply date filter - RE-ENABLED with better logging
+    const filteredDocs = filterByDate(allDocs);
+    const filteredQueries = filterByDate(allQueries);
+    const filteredComparisons = filterByDate(allComparisons);
+    const feedbackResults = filterByDate(allFeedback);
+    const summariesFiltered = filterByDate(allSummaries);
     
-    console.log('[EVALS] After filtering (currently disabled):', {
+    console.log('[EVALS] After filtering:', {
       docs: { all: allDocs.length, filtered: filteredDocs.length },
       queries: { all: allQueries.length, filtered: filteredQueries.length },
-      comparisons: { all: allComparisons.length, filtered: filteredComparisons.length }
+      comparisons: { all: allComparisons.length, filtered: filteredComparisons.length },
+      feedback: { all: allFeedback.length, filtered: feedbackResults.length },
+      summaries: { all: allSummaries.length, filtered: summariesFiltered.length }
     });
     
     // Total counts (from filtered data)
