@@ -1,0 +1,16 @@
+# Force GitHub to ignore certain files for language statistics
+*.py linguist-vendored
+*.cpp linguist-vendored
+*.c linguist-vendored
+*.f linguist-vendored
+*.f90 linguist-vendored
+.venv/** linguist-vendored
+venv/** linguist-vendored
+node_modules/** linguist-vendored
+
+# Mark TypeScript/JavaScript as the main languages
+*.ts linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
+*.js linguist-language=JavaScript
+*.jsx linguist-language=JavaScript
+
