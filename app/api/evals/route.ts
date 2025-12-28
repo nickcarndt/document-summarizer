@@ -33,11 +33,16 @@ export async function GET(request: NextRequest) {
     console.log('[EVALS] Documents count:', allDocs.length);
     
     const allQueries = await db.select().from(queries);
+    console.log('[EVALS] Raw queries from DB:', allQueries.length);
     console.log('[EVALS] Queries count:', allQueries.length);
-    console.log('[EVALS] Query dates:', allQueries.map(q => ({
-      id: q.id.substring(0, 8),
-      date: new Date(q.createdAt).toISOString()
-    })));
+    if (allQueries.length > 0) {
+      console.log('[EVALS] Query dates:', allQueries.map(q => ({
+        id: q.id.substring(0, 8),
+        date: new Date(q.createdAt).toISOString()
+      })));
+    } else {
+      console.log('[EVALS] WARNING: No queries found in database!');
+    }
     
     const allComparisons = await db.select().from(comparisons);
     console.log('[EVALS] Comparisons count:', allComparisons.length);
@@ -122,9 +127,23 @@ export async function GET(request: NextRequest) {
     });
     
     // Total counts (from filtered data)
+    console.log('[EVALS] Final counts before response:', {
+      allQueries: allQueries.length,
+      filteredQueries: filteredQueries.length,
+      allComparisons: allComparisons.length,
+      filteredComparisons: filteredComparisons.length
+    });
+    
     const docCount = { count: BigInt(filteredDocs.length) };
     const queryCount = { count: BigInt(filteredQueries.length) };
     const comparisonCount = { count: BigInt(filteredComparisons.length) };
+    
+    console.log('[EVALS] Query count calculation:', {
+      allQueriesFromDB: allQueries.length,
+      filteredQueriesAfterDateFilter: filteredQueries.length,
+      queryCountValue: Number(queryCount.count),
+      hasDateFilter: !!(dateFilter.start || dateFilter.end)
+    });
     
     logger.debug('Counts retrieved', 'EVALS', { 
       documents: Number(docCount.count),
