@@ -70,7 +70,7 @@ export default function SummaryCard({ model, content, latencyMs, referenceId, re
     <div className="bg-gray-800 rounded-lg p-6 animate-fadeIn">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold">{modelName}</h3>
-        <Tooltip text="Response time. Green: <5s (fast), Yellow: 5-15s (normal), Red: >15s (slow)">
+        <Tooltip text="Green <5s · Yellow 5-15s · Red >15s">
           <span className={`px-2 py-1 rounded text-xs font-medium text-white cursor-help ${getLatencyColor(latencyMs)}`}>
             {formatLatency(latencyMs)}
           </span>

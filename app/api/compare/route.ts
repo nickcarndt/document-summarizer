@@ -6,10 +6,20 @@ import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    const { referenceType, referenceId, winner } = await request.json();
+    const body = await request.json();
+    logger.debug('Compare request received', 'COMPARE', { body });
+    
+    const { referenceType, referenceId, winner } = body;
+    
+    logger.debug('Compare request parsed', 'COMPARE', { 
+      referenceType, 
+      referenceId, 
+      winner, 
+      winnerType: typeof winner 
+    });
     
     if (!referenceType || !referenceId || !winner) {
-      logger.warn('Compare request missing required fields', 'COMPARE');
+      logger.warn('Compare request missing required fields', 'COMPARE', { referenceType, referenceId, winner });
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
     }
     
@@ -19,11 +29,11 @@ export async function POST(request: NextRequest) {
     }
     
     if (!['claude', 'openai', 'tie'].includes(winner)) {
-      logger.warn('Invalid winner', 'COMPARE', { winner });
+      logger.warn('Invalid winner', 'COMPARE', { winner, winnerType: typeof winner });
       return NextResponse.json({ error: 'winner must be "claude", "openai", or "tie"' }, { status: 400 });
     }
     
-    logger.info('Saving comparison', 'COMPARE', { referenceType, winner });
+    logger.info('Saving comparison', 'COMPARE', { referenceType, referenceId, winner });
     
     // Check if comparison already exists for this reference
     const existing = await db
@@ -60,7 +70,19 @@ export async function POST(request: NextRequest) {
       record = inserted;
     }
     
-    logger.info('Comparison saved', 'COMPARE', { comparisonId: record.id, updated: existing.length > 0 });
+    logger.info('Comparison saved', 'COMPARE', { 
+      comparisonId: record.id, 
+      winner: record.winner,
+      updated: existing.length > 0 
+    });
+    
+    logger.debug('Comparison record details', 'COMPARE', { 
+      id: record.id,
+      referenceType: record.referenceType,
+      referenceId: record.referenceId,
+      winner: record.winner,
+      createdAt: record.createdAt
+    });
     
     return NextResponse.json({ id: record.id, updated: existing.length > 0 });
     

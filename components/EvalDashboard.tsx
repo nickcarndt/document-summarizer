@@ -97,7 +97,19 @@ export default function EvalDashboard() {
     setError(null);
     try {
       const dateParams = getDateRangeParams();
-      const response = await fetch(`/api/evals${dateParams}`);
+      // Add cache-busting timestamp
+      const params = new URLSearchParams();
+      if (dateParams && dateParams.startsWith('?')) {
+        const existingParams = new URLSearchParams(dateParams.substring(1));
+        existingParams.forEach((value, key) => {
+          params.set(key, value);
+        });
+      }
+      params.set('_t', Date.now().toString()); // Cache buster
+      
+      const response = await fetch(`/api/evals?${params.toString()}`, {
+        cache: 'no-store',
+      });
       if (!response.ok) {
         let errorMessage = 'Failed to fetch stats';
         try {
@@ -115,6 +127,11 @@ export default function EvalDashboard() {
         throw new Error(errorMessage);
       }
       const data = await response.json();
+      console.log('[EvalDashboard] Received data:', {
+        totalQueries: data.totalQueries,
+        totalDocuments: data.totalDocuments,
+        totalComparisons: data.totalComparisons
+      });
       setStats(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load stats';
@@ -504,7 +521,7 @@ export default function EvalDashboard() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">
               Claude Avg Response Length
-              <InfoIcon tooltip="Average character count of Claude responses. Longer isn't always better, but shows verbosity differences." />
+              <InfoIcon tooltip="Avg chars per response" />
             </h3>
             <p className="text-3xl font-bold text-orange-400">
               {stats.claudeAvgLength.toLocaleString()} chars
@@ -513,7 +530,7 @@ export default function EvalDashboard() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">
               OpenAI Avg Response Length
-              <InfoIcon tooltip="Average character count of OpenAI responses. Longer isn't always better, but shows verbosity differences." />
+              <InfoIcon tooltip="Avg chars per response" />
             </h3>
             <p className="text-3xl font-bold text-green-400">
               {stats.openaiAvgLength.toLocaleString()} chars
@@ -528,7 +545,7 @@ export default function EvalDashboard() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">
               Claude Agreement Rate
-              <InfoIcon tooltip="How often the comparison winner also received a thumbs up. Higher = more consistent preferences. If Claude wins a comparison AND gets thumbs up, that's 'agreement'. If Claude wins but gets thumbs down, that's 'disagreement' (might indicate user error or complex preference)." />
+              <InfoIcon tooltip="When the winner also got thumbs up. Higher = more consistent preferences." />
             </h3>
             <p className="text-3xl font-bold text-orange-400">
               {stats.claudeAgreementRate}%
@@ -537,7 +554,7 @@ export default function EvalDashboard() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">
               OpenAI Agreement Rate
-              <InfoIcon tooltip="How often the comparison winner also received a thumbs up. Higher = more consistent preferences. If OpenAI wins a comparison AND gets thumbs up, that's 'agreement'. If OpenAI wins but gets thumbs down, that's 'disagreement' (might indicate user error or complex preference)." />
+              <InfoIcon tooltip="When the winner also got thumbs up. Higher = more consistent preferences." />
             </h3>
             <p className="text-3xl font-bold text-green-400">
               {stats.openaiAgreementRate}%

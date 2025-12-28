@@ -33,6 +33,9 @@ export async function GET(request: NextRequest) {
     const allFeedback = await db.select().from(feedback);
     const allSummaries = await db.select().from(summaries);
     
+    // Debug logging
+    logger.debug('Total queries in DB', 'EVALS', { totalQueries: allQueries.length });
+    
     // Helper function to filter by date
     const filterByDate = <T extends { createdAt: Date | string }>(items: T[]): T[] => {
       if (!dateFilter.start && !dateFilter.end) return items;
@@ -59,7 +62,9 @@ export async function GET(request: NextRequest) {
     logger.debug('Counts retrieved', 'EVALS', { 
       documents: Number(docCount.count),
       queries: Number(queryCount.count),
-      comparisons: Number(comparisonCount.count)
+      comparisons: Number(comparisonCount.count),
+      allQueriesCount: allQueries.length,
+      filteredQueriesCount: filteredQueries.length
     });
     
     // Win rates (use filtered comparisons)
@@ -257,35 +262,49 @@ export async function GET(request: NextRequest) {
     };
     
     // 10a. Cost Tracking
-    // Pricing (per 1M tokens)
-    const CLAUDE_SONNET_INPUT = 0.003;  // $3 per 1M input tokens
-    const CLAUDE_SONNET_OUTPUT = 0.015; // $15 per 1M output tokens
-    const GPT4O_MINI_INPUT = 0.00015;   // $0.15 per 1M input
-    const GPT4O_MINI_OUTPUT = 0.0006;   // $0.60 per 1M output
+    // Pricing constants (per token, not per 1M)
+    const CLAUDE_INPUT_COST = 3.00 / 1_000_000;   // $3 per 1M input tokens
+    const CLAUDE_OUTPUT_COST = 15.00 / 1_000_000;  // $15 per 1M output tokens
+    const OPENAI_INPUT_COST = 0.15 / 1_000_000;   // $0.15 per 1M input tokens  
+    const OPENAI_OUTPUT_COST = 0.60 / 1_000_000;  // $0.60 per 1M output tokens
     
-    // Calculate costs from summaries (we have token data)
-    const claudeSummaryCost = summariesFiltered
-      .filter(s => s.model === 'claude')
-      .reduce((total, s) => {
-        const inputCost = (s.inputTokens || 0) * (CLAUDE_SONNET_INPUT / 1000000);
-        const outputCost = (s.outputTokens || 0) * (CLAUDE_SONNET_OUTPUT / 1000000);
-        return total + inputCost + outputCost;
-      }, 0);
+    // Debug logging
+    if (summariesFiltered.length > 0) {
+      logger.debug('Sample summary tokens', 'EVALS', {
+        firstSummary: {
+          model: summariesFiltered[0].model,
+          inputTokens: summariesFiltered[0].inputTokens,
+          outputTokens: summariesFiltered[0].outputTokens
+        }
+      });
+    }
     
-    const openaiSummaryCost = summariesFiltered
-      .filter(s => s.model === 'openai')
-      .reduce((total, s) => {
-        const inputCost = (s.inputTokens || 0) * (GPT4O_MINI_INPUT / 1000000);
-        const outputCost = (s.outputTokens || 0) * (GPT4O_MINI_OUTPUT / 1000000);
-        return total + inputCost + outputCost;
-      }, 0);
+    // Calculate costs from summaries (which have token data)
+    const claudeSummaries = summariesFiltered.filter(s => s.model === 'claude');
+    const openaiSummaries = summariesFiltered.filter(s => s.model === 'openai');
     
-    // Note: Queries don't have token data, so we can't calculate their cost accurately
-    // We'll only show summary costs for now
-    const totalClaudeCost = claudeSummaryCost;
-    const totalOpenaiCost = openaiSummaryCost;
+    const claudeTotalInputTokens = claudeSummaries.reduce((acc, s) => acc + (s.inputTokens || 0), 0);
+    const claudeTotalOutputTokens = claudeSummaries.reduce((acc, s) => acc + (s.outputTokens || 0), 0);
+    const claudeCost = (claudeTotalInputTokens * CLAUDE_INPUT_COST) + (claudeTotalOutputTokens * CLAUDE_OUTPUT_COST);
     
-    const response = NextResponse.json({
+    const openaiTotalInputTokens = openaiSummaries.reduce((acc, s) => acc + (s.inputTokens || 0), 0);
+    const openaiTotalOutputTokens = openaiSummaries.reduce((acc, s) => acc + (s.outputTokens || 0), 0);
+    const openaiCost = (openaiTotalInputTokens * OPENAI_INPUT_COST) + (openaiTotalOutputTokens * OPENAI_OUTPUT_COST);
+    
+    logger.debug('Cost calculation', 'EVALS', {
+      claude: {
+        inputTokens: claudeTotalInputTokens,
+        outputTokens: claudeTotalOutputTokens,
+        cost: claudeCost
+      },
+      openai: {
+        inputTokens: openaiTotalInputTokens,
+        outputTokens: openaiTotalOutputTokens,
+        cost: openaiCost
+      }
+    });
+    
+    const data = {
       totalDocuments: Number(docCount.count),
       totalQueries: Number(queryCount.count),
       totalComparisons: Number(comparisonCount.count),
@@ -340,19 +359,21 @@ export async function GET(request: NextRequest) {
       },
       
       costs: {
-        claude: Math.round(totalClaudeCost * 100) / 100, // Round to 2 decimal places
-        openai: Math.round(totalOpenaiCost * 100) / 100
+        claude: parseFloat(claudeCost.toFixed(2)),
+        openai: parseFloat(openaiCost.toFixed(2))
       },
       
       recentComparisons
+    };
+    
+    // Return with no-cache headers to ensure fresh data
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     });
-    
-    // Ensure no caching - always return fresh data
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
-    
-    return response;
     
   } catch (error) {
     logger.error('Eval stats fetch failed', 'EVALS', error);

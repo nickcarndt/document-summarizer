@@ -18,21 +18,28 @@ export default function CompareButtons({ referenceType, referenceId }: CompareBu
     // Defense in depth: check multiple conditions
     if (submitting || selected !== null || hasVoted) return; // Prevent changing vote or rapid clicks
 
+    console.log('[UI] Sending comparison:', { referenceType, referenceId, winner });
+
     // Immediately set flags to prevent duplicate clicks
     setHasVoted(true);
     setSubmitting(true);
     try {
+      const payload = {
+        referenceType,
+        referenceId,
+        winner,
+      };
+      console.log('[UI] Comparison payload:', payload);
+      
       const response = await fetch('/api/compare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          referenceType,
-          referenceId,
-          winner,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
+        const data = await response.json();
+        console.log('[UI] Comparison saved successfully:', data);
         setSelected(winner);
         toast.success('Vote recorded!');
       } else {
