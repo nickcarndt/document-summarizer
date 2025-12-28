@@ -107,8 +107,9 @@ export default function EvalDashboard() {
       }
       params.set('_t', Date.now().toString()); // Cache buster
       
-      const response = await fetch(`/api/evals?${params.toString()}`, {
+      const response = await fetch(`/api/evals?${params.toString()}&_t=${Date.now()}`, {
         cache: 'no-store',
+        next: { revalidate: 0 }
       });
       if (!response.ok) {
         let errorMessage = 'Failed to fetch stats';

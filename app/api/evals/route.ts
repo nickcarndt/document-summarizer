@@ -9,6 +9,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[EVALS] === Starting eval data fetch ===');
+    
     const searchParams = request.nextUrl.searchParams;
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -28,8 +30,19 @@ export async function GET(request: NextRequest) {
     
     // Get all data first
     const allDocs = await db.select().from(documents);
+    console.log('[EVALS] Documents count:', allDocs.length);
+    
     const allQueries = await db.select().from(queries);
+    console.log('[EVALS] Queries count:', allQueries.length);
+    
     const allComparisons = await db.select().from(comparisons);
+    console.log('[EVALS] Comparisons count:', allComparisons.length);
+    console.log('[EVALS] Comparisons breakdown:', {
+      claude: allComparisons.filter(c => c.winner === 'claude').length,
+      openai: allComparisons.filter(c => c.winner === 'openai').length,
+      tie: allComparisons.filter(c => c.winner === 'tie').length,
+    });
+    
     const allFeedback = await db.select().from(feedback);
     const allSummaries = await db.select().from(summaries);
     
@@ -48,11 +61,26 @@ export async function GET(request: NextRequest) {
     };
     
     // Apply date filter if provided
-    const filteredDocs = filterByDate(allDocs);
-    const filteredQueries = filterByDate(allQueries);
-    const filteredComparisons = filterByDate(allComparisons);
-    const feedbackResults = filterByDate(allFeedback);
-    const summariesFiltered = filterByDate(allSummaries);
+    // TEMPORARILY DISABLED FOR DEBUGGING - Check if date filter is excluding recent data
+    console.log('[EVALS] Date filter status:', { 
+      hasStartDate: !!dateFilter.start, 
+      hasEndDate: !!dateFilter.end,
+      startDate: dateFilter.start?.toISOString(),
+      endDate: dateFilter.end?.toISOString()
+    });
+    
+    // Temporarily use all data to debug
+    const filteredDocs = allDocs; // filterByDate(allDocs);
+    const filteredQueries = allQueries; // filterByDate(allQueries);
+    const filteredComparisons = allComparisons; // filterByDate(allComparisons);
+    const feedbackResults = allFeedback; // filterByDate(allFeedback);
+    const summariesFiltered = allSummaries; // filterByDate(allSummaries);
+    
+    console.log('[EVALS] After filtering (currently disabled):', {
+      docs: { all: allDocs.length, filtered: filteredDocs.length },
+      queries: { all: allQueries.length, filtered: filteredQueries.length },
+      comparisons: { all: allComparisons.length, filtered: filteredComparisons.length }
+    });
     
     // Total counts (from filtered data)
     const docCount = { count: BigInt(filteredDocs.length) };
@@ -73,6 +101,15 @@ export async function GET(request: NextRequest) {
     const openaiWins = comparisonResults.filter(c => c.winner === 'openai').length;
     const ties = comparisonResults.filter(c => c.winner === 'tie').length;
     const totalComparisons = comparisonResults.length || 1; // Avoid division by zero
+    
+    console.log('[EVALS] Win calculation:', { 
+      claudeWins, 
+      openaiWins, 
+      tieCount: ties, 
+      total: totalComparisons,
+      filteredCount: comparisonResults.length,
+      allCount: allComparisons.length
+    });
     
     // Win counts for display
     const winCounts = {
@@ -366,12 +403,25 @@ export async function GET(request: NextRequest) {
       recentComparisons
     };
     
+    console.log('[EVALS] Returning:', {
+      totalDocuments: data.totalDocuments,
+      totalQueries: data.totalQueries,
+      totalComparisons: data.totalComparisons,
+      claudeWins: winCounts.claude,
+      openaiWins: winCounts.openai,
+      ties: winCounts.tie,
+      claudeWinRate: data.claudeWinRate,
+      openaiWinRate: data.openaiWinRate,
+      tieRate: data.tieRate
+    });
+    
     // Return with no-cache headers to ensure fresh data
     return NextResponse.json(data, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
+        'X-Content-Type-Options': 'nosniff',
       }
     });
     
