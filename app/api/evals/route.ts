@@ -359,8 +359,10 @@ export async function GET(request: NextRequest) {
     
     // 10a. Cost Tracking
     // Pricing constants (per token, not per 1M)
-    const CLAUDE_INPUT_COST = 3.00 / 1_000_000;   // $3 per 1M input tokens
-    const CLAUDE_OUTPUT_COST = 15.00 / 1_000_000;  // $15 per 1M output tokens
+    // Claude Haiku: $0.25 per 1M input, $1.25 per 1M output
+    const CLAUDE_INPUT_COST = 0.25 / 1_000_000;   // $0.25 per 1M input tokens
+    const CLAUDE_OUTPUT_COST = 1.25 / 1_000_000;  // $1.25 per 1M output tokens
+    // GPT-4o-mini: $0.15 per 1M input, $0.60 per 1M output
     const OPENAI_INPUT_COST = 0.15 / 1_000_000;   // $0.15 per 1M input tokens  
     const OPENAI_OUTPUT_COST = 0.60 / 1_000_000;  // $0.60 per 1M output tokens
     
