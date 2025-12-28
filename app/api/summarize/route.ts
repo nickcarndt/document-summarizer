@@ -123,8 +123,22 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
+    // Detailed error logging
+    console.error('[SUMMARIZE] Error:', error);
+    console.error('[SUMMARIZE] Error message:', error instanceof Error ? error.message : 'Unknown');
+    console.error('[SUMMARIZE] Stack:', error instanceof Error ? error.stack : 'No stack');
+    
+    // Log error details if it's an API error
+    if (error && typeof error === 'object' && 'status' in error) {
+      console.error('[SUMMARIZE] API Error status:', error.status);
+      console.error('[SUMMARIZE] API Error body:', JSON.stringify(error, null, 2));
+    }
+    
     logger.error('Summarization failed', 'SUMMARIZE', error);
-    return NextResponse.json({ error: 'Failed to generate summaries' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to generate summaries',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
