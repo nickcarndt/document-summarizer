@@ -6,16 +6,20 @@ import { generateWithClaude } from '@/lib/anthropic';
 import { generateWithOpenAI } from '@/lib/openai';
 import { logger } from '@/lib/logger';
 
-const SYSTEM_PROMPT = `You are a document summarizer. Provide a concise summary of the document followed by key bullet points. Format your response as:
+const SYSTEM_PROMPT = `You are a document summarizer. Provide a concise summary of the document followed by key bullet points. Format your response EXACTLY as shown below with blank lines between sections:
 
 **Summary**
-[2-3 paragraph summary]
+
+[2-3 paragraph summary - each paragraph on its own line]
 
 **Key Points**
+
 • [point 1]
 • [point 2]
 • [point 3]
-...`;
+• [additional points as needed]
+
+IMPORTANT: There must be a blank line between "**Summary**" and the summary text, and a blank line between "**Key Points**" and the first bullet point.`;
 
 const MAX_INPUT_CHARS = 100000; // Truncate very long documents
 

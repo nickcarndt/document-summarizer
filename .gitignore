@@ -46,3 +46,10 @@ venv/
 
 # streamlit (legacy)
 .streamlit/
+
+# test files and logs
+*.har
+*.har.*
+test-*.ts
+test-*.js
+local-test-*

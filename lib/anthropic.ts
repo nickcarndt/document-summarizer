@@ -19,7 +19,7 @@ export async function generateWithClaude(
   const start = Date.now();
   
   const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20250514',
+    model: 'claude-3-5-haiku-20241022',
     max_tokens: maxTokens,
     temperature: 0,
     top_p: 1,
