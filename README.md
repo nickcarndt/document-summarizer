@@ -225,15 +225,15 @@ npm run lint       # ESLint
 
 After testing on financial documents:
 
-| Metric | Claude | OpenAI |
-|--------|--------|--------|
-| Win Rate | 78% | 22% |
-| Avg Latency | 16.2s | 8.3s |
-| Avg Length | 2,601 chars | 2,118 chars |
-| Thumbs Up | 67% | 60% |
-| Cost | $0.30 | $0.02 |
+| Metric | Claude 3.5 Haiku | GPT-4o-mini |
+|--------|------------------|-------------|
+| Win Rate | 50% | 0% |
+| Avg Latency | 9.9s | 6.1s |
+| Avg Length | 1,734 chars | 1,706 chars |
+| Thumbs Up | 100% | 50% |
+| Cost | $0.02 | $0.01 |
 
-**Insight:** Claude preferred for synthesis quality despite higher latency and cost. OpenAI competitive on speed.
+**Insight:** Fair comparison between fast-tier models. Claude 3.5 Haiku and GPT-4o-mini show competitive performance with similar costs.
 
 ## Future Improvements
 

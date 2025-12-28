@@ -18,6 +18,8 @@ export async function generateWithClaude(
 ): Promise<GenerateResponse> {
   const start = Date.now();
   
+  // Using Claude 3.5 Haiku for fair comparison with GPT-4o-mini
+  // Both are "fast tier" models from their respective providers
   const response = await client.messages.create({
     model: 'claude-3-5-haiku-20241022',
     max_tokens: maxTokens,

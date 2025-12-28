@@ -56,7 +56,7 @@ export function Tooltip({ text, children }: TooltipProps) {
     <div ref={containerRef} className="relative group inline-block">
       {children}
       <div 
-        className={`absolute ${positionClasses[position]} px-3 py-2 bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 max-w-[200px] whitespace-normal text-center`}
+        className={`absolute ${positionClasses[position]} px-3 py-2 bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 max-w-[300px] whitespace-nowrap text-center`}
       >
         {text}
         <div className={arrowClasses[position]}></div>
