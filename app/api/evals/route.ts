@@ -4,8 +4,9 @@ import { documents, queries, summaries, feedback, comparisons } from '@/db/schem
 import { sql, desc, eq, gte, and } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 
-// Mark route as dynamic since we use searchParams
+// Disable caching - force dynamic rendering
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {

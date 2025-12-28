@@ -3,6 +3,10 @@ import { db } from '@/lib/db';
 import { documents, queries, summaries, feedback, comparisons } from '@/db/schema';
 import { logger } from '@/lib/logger';
 
+// Disable caching - force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     logger.info('Exporting eval data to JSON', 'EVALS_EXPORT');
@@ -61,11 +65,14 @@ export async function GET() {
       }))
     };
     
-    // Return JSON file
+    // Return JSON file with no-cache headers
     return new NextResponse(JSON.stringify(data, null, 2), {
       headers: {
         'Content-Type': 'application/json',
         'Content-Disposition': `attachment; filename="eval-data-${new Date().toISOString().split('T')[0]}.json"`,
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
     
