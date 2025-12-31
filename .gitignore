@@ -53,3 +53,7 @@ venv/
 test-*.ts
 test-*.js
 local-test-*
+
+# interview prep documents (keep local)
+*INTERVIEW_PREP*.md
+*TECH REFERENCE GUIDE*.md
